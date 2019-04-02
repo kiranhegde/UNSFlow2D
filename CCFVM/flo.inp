@@ -1,0 +1,19 @@
+Start     1
+FlowType  inviscid
+Mach      0.8
+AOA       1.25
+Reynolds  5000.0
+CFL       1000
+Timemode  lusgs 
+GradType  gg
+LastIter  0
+MaxIter   10000
+MinRes    1.0e-12
+SaveInt   1000
+ScrInt    100
+NoIso     30
+Flux      roe
+Limiter   1
+FarBC     0  0.0  0.0
+GridFile  "geometry.inp"
+

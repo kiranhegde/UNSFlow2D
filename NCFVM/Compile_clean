@@ -1,0 +1,11 @@
+#!/bin/bash
+
+
+rm -fr FLO* *.DAT p.dat  wt.dat *.gnu fort.*	
+echo "cleaning *.o files"
+make clean 
+echo "compiling ..."
+make -f makefile 
+echo "cleaning *.o files"
+make clean 
+./Flo2d flo.inp

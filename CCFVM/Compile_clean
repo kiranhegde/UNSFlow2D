@@ -1,0 +1,22 @@
+#!/bin/bash
+
+arg=$#
+
+
+rm -fr FLO* *.DAT p.dat  wt.dat *.gnu fort.*	
+echo "cleaning *.o files"
+make clean 
+echo "compiling ..."
+make -f makefile 
+
+if [ $arg -gt 0 ]
+then
+echo "cleaning *.o files"
+rm -fr *.o *.mod  fort.*
+#./Flo2d flo.inp
+else
+echo "cleaning *.o "
+#mv  Flo2d  /home/kiranhegde/FlowSolvers/UNSFlow2DRun/
+make clean 
+rm -fr *.o *.mod  fort.*
+fi
