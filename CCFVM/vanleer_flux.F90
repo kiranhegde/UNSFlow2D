@@ -1,5 +1,6 @@
 !==============================================================================
-subroutine vanleer_flux(ie,c1,c2,qcl,qcr)
+subroutine vanleer_flux(ie,qcl,qcr,flux)
+use data_type,only:dp,i4
 !==============================================================================
 !#  computes total convective flux across a face using van leer
 !#  flux vector splitting method given left and right conserved states
@@ -11,14 +12,13 @@ use pri
 use grid
 implicit none
 !!------------------------------------------------------------------------------
-integer(kind=i4):: i,ie,c1,c2
-real(kind=dp):: flux
+integer(kind=i4):: i,ie
 real(kind=dp):: rl, ul, vl, pl, cl, unl, ml, hl,ql2,al2
 real(kind=dp):: rr, ur, vr, pr, cr, unr, mr, hr,qr2,ar2
 real(kind=dp):: mlp, mrm, mrp, mlm,p5p,p5m,m4p,m4m,alpha,beta
 real(kind=dp):: p12, plp, prm, fmass12, delta
 real(kind=dp):: fmass_p,fmass_m,dissi
-real(kind=dp):: fluxL(nvar),fluxR(nvar),fluxP(nvar)
+real(kind=dp):: fluxL(nvar),fluxR(nvar),fluxP(nvar),flux(nvar)
 real(kind=dp):: qcl(nvar), qcr(nvar)
 real(kind=dp):: nx,ny,area,dist
 
@@ -94,11 +94,12 @@ fluxP(3)=nx*P12
 fluxP(4)=ny*P12
 fluxP(1)=delta
 do i=1,nvar
-flux =0.5d0*fmass12*(fluxL(i)+fluxR(i))-0.5d0*dissi*(fluxR(i)-fluxL(i))+fluxP(i)
-cell(c1)%res(i)=cell(c1)%res(i)+flux*area
-cell(c2)%res(i)=cell(c2)%res(i)-flux*area
+flux(i) =0.5d0*fmass12*(fluxL(i)+fluxR(i))-0.5d0*dissi*(fluxR(i)-fluxL(i))+fluxP(i)
+!cell(c1)%res(i)=cell(c1)%res(i)+flux*area
+!cell(c2)%res(i)=cell(c2)%res(i)-flux*area
 enddo
 
+flux=flux*area
 
 end subroutine vanleer_flux
 !==============================================================================

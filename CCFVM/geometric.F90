@@ -1,11 +1,31 @@
 subroutine geometric  
 use grid
 implicit none
-!integer(kind=i4) :: i
+integer(kind=i4) :: i,in,out
 
 !    Read grid from file
 call read_grid
 
+
+do i=startFC,endFC
+   in=fc(i)%in
+   out=fc(i)%out
+ 
+   if(out==0.or.in ==0)  then 
+      print*,in,out 
+      Stop 'Inside faces in/out==0' 
+   endif
+enddo
+
+do i=startBC,endBC
+   in=fc(i)%in
+   out=fc(i)%out
+ 
+   if(in <=0)  then 
+      print*,in,out 
+      Stop 'BC faces in/out==0' 
+   endif
+enddo
 ! Mesh connectivity generation
 
 call cell_2_cell
@@ -14,19 +34,21 @@ call renumber
 
 call cell_2_face
 
-!call face_co_volume
-!call cell_face_norm_c2f_dist
+call cell_face_norm_c2f_dist
 
 call vertex_2_cell
+
 call cell_2_vertex
+
 call avg_cell_face_length
 
 call face_co_volume
-call cell_face_norm_c2f_dist
+
+! compute  geometrical co-efficient for least square 
+call LSQR_Coeff
 
 !    writes cell face  normal vector's in gnuplot format to files
 call write_2_file
-call LSQR_Coeff
 
 !========================================================
 contains
@@ -45,36 +67,30 @@ print*
 print*,"==> Cells surrounding a cell "
 
 cell(:)%nc2c=0
-do i=1,nof
+do i=startFC,endFC
    in=fc(i)%in
    out=fc(i)%out
  
-   if(in/=0.and.out/=0) then
+   c=0
+   do j=1,cell(in)%nc2c
+      if(cell(in)%c2c(j)==out) c=c+1  
+   enddo
 
-     c=0
-     do j=1,cell(in)%nc2c
-        if(cell(in)%c2c(j)==out) c=c+1  
-     enddo
+   if(c==0) then 
+     cell(in)%nc2c=cell(in)%nc2c+1
+     call alloc_int_ptr(cell(in)%c2c,cell(in)%nc2c)      
+     cell(in)%c2c(cell(in)%nc2c)=out      
+   endif
 
-     if(c==0) then 
-       cell(in)%nc2c=cell(in)%nc2c+1
-       call alloc_int_ptr(cell(in)%c2c,cell(in)%nc2c)      
-       cell(in)%c2c(cell(in)%nc2c)=out      
-     endif
+   c=0
+   do j=1,cell(out)%nc2c
+      if(cell(out)%c2c(j)==in) c=c+1  
+   enddo
 
-
-     c=0
-     do j=1,cell(out)%nc2c
-        if(cell(out)%c2c(j)==in) c=c+1  
-     enddo
-
-     if(c==0) then 
-       cell(out)%nc2c=cell(out)%nc2c+1
-       call alloc_int_ptr(cell(out)%c2c,cell(out)%nc2c)      
-       cell(out)%c2c(cell(out)%nc2c)=in      
-     endif
-
-
+   if(c==0) then 
+     cell(out)%nc2c=cell(out)%nc2c+1
+     call alloc_int_ptr(cell(out)%c2c,cell(out)%nc2c)      
+     cell(out)%c2c(cell(out)%nc2c)=in      
    endif
    
 enddo
@@ -107,13 +123,13 @@ do i=1,nof
    in=fc(i)%in
    out=fc(i)%out
 
-   if(in/=0) then
+   if(in>0) then
    cell(in)%nc2f=cell(in)%nc2f+1
    call alloc_int_ptr(cell(in)%c2f,cell(in)%nc2f)      
    cell(in)%c2f(cell(in)%nc2f)=i      
    endif
 
-   if(out/=0) then
+   if(out>0) then
    cell(out)%nc2f=cell(out)%nc2f+1
    call alloc_int_ptr(cell(out)%c2f,cell(out)%nc2f)      
    cell(out)%c2f(cell(out)%nc2f)=i      
@@ -145,67 +161,63 @@ real(kind=dp)    :: x1,y1,x2,y2
 real(kind=dp)    :: dx,dy
 
 
-do i=1,nof
+fc(:)%cov=0.d0
+do i=startFC,endFC
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    in=fc(i)%in
    out=fc(i)%out
-   fc(i)%cov=0.d0
    
-   if(in/=0.and.out/=0) then
-      x1 = pt(p1)%x    ; y1 = pt(p1)%y
-      x2 = cell(out)%cen(1) ; y2 = cell(out)%cen(2)
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
-   
-      x1 = cell(out)%cen(1) ; y1 = cell(out)%cen(2)
-      x2 = pt(p2)%x    ; y2 = pt(p2)%y
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
-   
-      x1 = pt(p2)%x    ; y1 = pt(p2)%y
-      x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
-   
-      x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
-      x2 = pt(p1)%x    ; y2 = pt(p1)%y
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
+   x1 = pt(p1)%x    ; y1 = pt(p1)%y
+   x2 = cell(out)%cen(1) ; y2 = cell(out)%cen(2)
+   dx = 0.5d0*(x2+x1) ; dy = y2-y1
+   fc(i)%cov=fc(i)%cov+dx*dy
+
+   x1 = cell(out)%cen(1) ; y1 = cell(out)%cen(2)
+   x2 = pt(p2)%x    ; y2 = pt(p2)%y
+   dx = 0.5d0*(x2+x1) ; dy = y2-y1
+   fc(i)%cov=fc(i)%cov+dx*dy
+
+   x1 = pt(p2)%x    ; y1 = pt(p2)%y
+   x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
+   dx = 0.5d0*(x2+x1) ; dy = y2-y1
+   fc(i)%cov=fc(i)%cov+dx*dy
+
+   x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
+   x2 = pt(p1)%x    ; y2 = pt(p1)%y
+   dx = 0.5d0*(x2+x1) ; dy = y2-y1
+   fc(i)%cov=fc(i)%cov+dx*dy
+
+   if(fc(i)%cov <= 0.d0) then  
+      print*,i,'0 ? -ve face co-volume'
+      write(75,*)i,in,out
+      stop
    endif
 
-   if(in==0.and.out/=0) then
-      x1 = pt(p1)%x    ; y1 = pt(p1)%y
-      x2 = cell(out)%cen(1) ; y2 = cell(out)%cen(2)
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
-   
-      x1 = cell(out)%cen(1) ; y1 = cell(out)%cen(2)
-      x2 = pt(p2)%x    ; y2 = pt(p2)%y
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
-   
-      x1 = pt(p2)%x ; y1 = pt(p2)%y
-      x2 = pt(p1)%x ; y2 = pt(p1)%y
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
-   endif
+enddo
 
-   if(out==0.and.in/=0) then
-      x1 = pt(p1)%x ; y1 = pt(p1)%y
-      x2 = pt(p2)%x ; y2 = pt(p2)%y
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
+do i=startBC,endBC
+   p1=fc(i)%pt(1)
+   p2=fc(i)%pt(2)
+   in=fc(i)%in
+   x1 = pt(p1)%x ; y1 = pt(p1)%y
+   x2 = pt(p2)%x ; y2 = pt(p2)%y
+   dx = 0.5d0*(x2+x1) ; dy = y2-y1
+   fc(i)%cov=fc(i)%cov+dx*dy
 
-      x1 = pt(p2)%x    ; y1 = pt(p2)%y
-      x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
-   
-      x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
-      x2 = pt(p1)%x    ; y2 = pt(p1)%y
-      dx = 0.5d0*(x2+x1) ; dy = y2-y1
-      fc(i)%cov=fc(i)%cov+dx*dy
+   x1 = pt(p2)%x    ; y1 = pt(p2)%y
+   x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
+   dx = 0.5d0*(x2+x1) ; dy = y2-y1
+   fc(i)%cov=fc(i)%cov+dx*dy
+
+   x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
+   x2 = pt(p1)%x    ; y2 = pt(p1)%y
+   dx = 0.5d0*(x2+x1) ; dy = y2-y1
+   fc(i)%cov=fc(i)%cov+dx*dy
+   if(fc(i)%cov <= 0.d0) then  
+      print*,i,'? 1 -ve face co-volume'
+      write(75,*)i,in,out
+      stop
    endif
 enddo
 
@@ -222,8 +234,8 @@ do i=1,nof
       stop
    endif
 
-   if(in/=0) cell(in)%cov=cell(in)%cov+fc(i)%cov
-   if(out/=0) cell(out)%cov=cell(out)%cov+fc(i)%cov
+   if(in>0) cell(in)%cov=cell(in)%cov+fc(i)%cov
+   if(out>0) cell(out)%cov=cell(out)%cov+fc(i)%cov
 enddo
 
 do i=1,noc
@@ -236,7 +248,7 @@ enddo
 
 end subroutine face_co_volume
 !===========================================================
-! Finding face co-volume for face & Cell gradient
+! 
 subroutine cell_face_norm_c2f_dist
 use param
 use grid
@@ -248,8 +260,8 @@ real(kind=dp)    :: x1,y1,x2,y2
 real(kind=dp)    :: xc,yc,dx,dy
 real(kind=dp)    :: check,dotprod
 
-! face normal components
-do i=1,nof
+! face normal components & face midpoint
+do i=startFC,endFC
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    x1 = pt(p1)%x ; y1 = pt(p1)%y
@@ -257,32 +269,27 @@ do i=1,nof
    dx = x2-x1 ; dy = y2-y1
    fc(i)%sx = dy
    fc(i)%sy = -dx
+   
+   fc(i)%cen(1)=0.5d0*(pt(p1)%x+pt(p2)%x)
+   fc(i)%cen(2)=0.5d0*(pt(p1)%y+pt(p2)%y)
 enddo
 
 
 ! making boundary face normal outward
-do i=1,nof
-   if(fc(i)%bc==2001) then
+do i=startBC,endBC
+
+   p1=fc(i)%pt(1)
+   p2=fc(i)%pt(2)
+   fc(i)%cen(1)=0.5d0*(pt(p1)%x+pt(p2)%x)
    in=fc(i)%in
    out=fc(i)%out
-   if(in==0) then
-      xc=cell(out)%cen(1)
-      yc=cell(out)%cen(2)
-      p1=fc(i)%pt(1)
-      p2=fc(i)%pt(2)
-      check=dotprod(p1,p2,xc,yc)
-      if(check>0.0d0) then
-        fc(i)%pt(1)=p2
-        fc(i)%pt(2)=p1
-        x1 = pt(p2)%x ; y1 = pt(p2)%y
-        x2 = pt(p1)%x ; y2 = pt(p1)%y
-        dx = x2-x1 ; dy = y2-y1
-        fc(i)%sx = dy
-        fc(i)%sy = -dx
-      endif  
-   endif  
+ 
+   if(out>=0.or.in<=0)  then 
+      print*,in,out 
+      Stop 'in or out=0' 
+   endif
 
-   if(out==0) then
+   if(fc(i)%bc==2001) then
       xc=cell(in)%cen(1)
       yc=cell(in)%cen(2)
       p1=fc(i)%pt(1)
@@ -298,19 +305,40 @@ do i=1,nof
         fc(i)%sy = -dx
       endif  
    endif  
+
+   if(fc(i)%bc==1001) then
+      xc=cell(in)%cen(1)
+      yc=cell(in)%cen(2)
+      p1=fc(i)%pt(1)
+      p2=fc(i)%pt(2)
+      check=dotprod(p1,p2,xc,yc)
+      if(check>0.0d0) then
+        fc(i)%pt(1)=p2
+        fc(i)%pt(2)=p1
+        x1 = pt(p2)%x ; y1 = pt(p2)%y
+        x2 = pt(p1)%x ; y2 = pt(p1)%y
+        dx = x2-x1 ; dy = y2-y1
+        fc(i)%sx = dy
+        fc(i)%sy = -dx
+      endif  
    endif  
+
 enddo
 
+
+return
+
+
 ! cell center to face distance
-do i=1,nof
+!do i=1,nof
    !in=fc(i)%in
    !out=fc(i)%out
    
-   p1=fc(i)%pt(1)
-   p2=fc(i)%pt(2)
+!   p1=fc(i)%pt(1)
+!   p2=fc(i)%pt(2)
    
-   fc(i)%cen(1)=0.5d0*(pt(p1)%x+pt(p2)%x)
-   fc(i)%cen(2)=0.5d0*(pt(p1)%y+pt(p2)%y)
+!   fc(i)%cen(1)=0.5d0*(pt(p1)%x+pt(p2)%x)
+!   fc(i)%cen(2)=0.5d0*(pt(p1)%y+pt(p2)%y)
    
 !   ! Left cell distance 
 !   if(in/=0) then
@@ -328,7 +356,7 @@ do i=1,nof
 !   fc(i)%rdy = yfc-yc2 
 !   endif
 
-enddo
+!enddo
 
 !do i=1,noc
 !   print*,i,(cell(i)%c2c(j), j=1,cell(i)%nc2c) 
@@ -361,7 +389,7 @@ do i=1,nof
    in=fc(i)%in
    out=fc(i)%out
 
-   if(in/=0) then
+   if(in>0) then
          c=0
          do j=1,pt(p1)%nv2c
             if(pt(p1)%v2c(j)==in) c=c+1  
@@ -383,7 +411,7 @@ do i=1,nof
          endif
    endif
 
-   if(out/=0) then
+   if(out>0) then
          c=0
          do j=1,pt(p1)%nv2c
             if(pt(p1)%v2c(j)==out) c=c+1  
@@ -477,13 +505,13 @@ do i=1,nof
    sx=0.5d0*fc(i)%sx
    sy=0.5d0*fc(i)%sy
    ds=dsqrt(sx*sx+sy*sy)
-   if(in/=0) then 
+   if(in>0) then 
      cell(in)%ds=cell(in)%ds+ds
      cell(in)%dx=cell(in)%dx+sx
      cell(in)%dy=cell(in)%dy+sy
    endif 
 
-   if(out/=0) then 
+   if(out>0) then 
      cell(out)%ds=cell(out)%ds+ds
      cell(out)%dx=cell(out)%dx+sx
      cell(out)%dy=cell(out)%dy+sy
@@ -699,60 +727,60 @@ end subroutine write_2_file
 !===========================================================================
 !                      Allocate/extend array
 !===========================================================================
-subroutine alloc_int_ptr1(x,n)
-use data_type
-implicit none
-integer(kind=i4),intent(in) ::n 
-integer(kind=i4)::i,j
-integer(kind=i4),dimension(:),pointer::temp
-integer(kind=i4),dimension(:),pointer::x
-
-if (n <= 0) then
- write(*,*) "my_alloc_int_ptr received non-positive dimension. Stop."
- stop
-endif
-
-! If not allocated, allocate and return
-if (.not.(associated(x))) then
-!if (.not.(allocated(x))) then
- allocate(x(n))
- return
-endif
-
-! If reallocation, create a pointer with a target of new dimension.
-allocate(temp(n))
-temp=0
-
-! (1) Expand the array dimension
-if ( n > size(x) ) then
-   do i = 1, size(x)
-      temp(i) = x(i)
-   end do
-
-! (2) Shrink the array dimension: the extra data, x(n+1:size(x)), discarded.
-else
-   j=ubound(x,1,i4)
-   if(j<=0) then
-      print*, "allocation issue in alloc_int_ptr..."
-      print*,j,size(x)
-      stop
-   endif
-   do i = 1, n
-      temp(i) = x(i)
-   end do
-endif
-
-! Destroy the target of x
-  deallocate(x)
-
-! Re-assign the pointer
- x => temp
-
-!deallocate(temp)
-
-return
-
-end subroutine alloc_int_ptr1
+!subroutine alloc_int_ptr1(x,n)
+!use data_type
+!implicit none
+!integer(kind=i4),intent(in) ::n 
+!integer(kind=i4)::i,j
+!integer(kind=i4),dimension(:),pointer::temp
+!integer(kind=i4),dimension(:),pointer::x
+!
+!if (n <= 0) then
+! write(*,*) "my_alloc_int_ptr received non-positive dimension. Stop."
+! stop
+!endif
+!
+!! If not allocated, allocate and return
+!if (.not.(associated(x))) then
+!!if (.not.(allocated(x))) then
+! allocate(x(n))
+! return
+!endif
+!
+!! If reallocation, create a pointer with a target of new dimension.
+!allocate(temp(n))
+!temp=0
+!
+!! (1) Expand the array dimension
+!if ( n > size(x) ) then
+!   do i = 1, size(x)
+!      temp(i) = x(i)
+!   end do
+!
+!! (2) Shrink the array dimension: the extra data, x(n+1:size(x)), discarded.
+!else
+!   j=ubound(x,1,i4)
+!   if(j<=0) then
+!      print*, "allocation issue in alloc_int_ptr..."
+!      print*,j,size(x)
+!      stop
+!   endif
+!   do i = 1, n
+!      temp(i) = x(i)
+!   end do
+!endif
+!
+!! Destroy the target of x
+!  deallocate(x)
+!
+!! Re-assign the pointer
+! x => temp
+!
+!!deallocate(temp)
+!
+!return
+!
+!end subroutine alloc_int_ptr1
 
 !pure subroutine add_to(vec,val,n,chunk_size,finished)
 !http://degenerateconic.com/dynamically-sizing-arrays/
@@ -944,11 +972,11 @@ do i=1,nof
    in=fc(i)%in
    out=fc(i)%out
 
-   if(in/=0) then
+   if(in>0) then
      fc(i)%in=newnum(in)
    endif
 
-   if(out/=0) then
+   if(out>0) then
      fc(i)%out=newnum(out)
    endif
 enddo    
@@ -1062,37 +1090,104 @@ integer(kind=i4) :: i,j,c
 real(kind=dp)    :: dx,dy,xc,yc
 real(kind=dp)    :: r11,r12,r22
 
-do i=1,noc
-   xc=cell(i)%cen(1) 
-   yc=cell(i)%cen(2) 
-   dx=0.d0
-   dy=0.d0
-   r11=0.d0
-   r12=0.d0
-   r22=0.d0
+cell(:)%r11=0.0_dp
+cell(:)%r12=0.0_dp
+cell(:)%r22=0.0_dp
 
-   do j=1,cell(i)%nc2c
-      c=cell(i)%c2c(j)
-      dx=cell(c)%cen(1)-xc
-      dy=cell(c)%cen(2)-yc
-      r11=r11+dx*dx
-      r12=r12+dx*dy
-      r22=r22+dy*dy
-   enddo
+do i=startFC,endFC
+   in   =fc(i)%in   
+   out  =fc(i)%out  
+   dx=cell(out)%cen(1)-cell(in)%cen(1)
+   dy=cell(out)%cen(2)-cell(in)%cen(2)
+   cell(in )%r11=cell(in )%r11+dx*dx
+   cell(in )%r12=cell(in )%r12+dx*dy
+   cell(in )%r22=cell(in )%r22+dy*dy
 
-   r11=dsqrt(r11)
-   r12=r12/r11
-   r22=dsqrt(r22-r12*r12 )
-
-   cell(i)%r11=r11
-   cell(i)%r12=r12
-   cell(i)%r22=r22
+   dx=cell(in)%cen(1)-cell(out)%cen(1)
+   dy=cell(in)%cen(2)-cell(out)%cen(2)
+   cell(out)%r11=cell(out)%r11+dx*dx
+   cell(out)%r12=cell(out)%r12+dx*dy
+   cell(out)%r22=cell(out)%r22+dy*dy
 enddo
+
+do i=startBC,endBC
+   in =fc(i)%in   
+   dx=fc(i)%cen(1)-cell(in)%cen(1)
+   dy=fc(i)%cen(2)-cell(in)%cen(2)
+   cell(in)%r11=cell(in)%r11+dx*dx
+   cell(in)%r12=cell(in)%r12+dx*dy
+   cell(in)%r22=cell(in)%r22+dy*dy 
+enddo
+
+do i=1,noc
+   r11=dsqrt(cell(i)%r11)
+   cell(i)%r11=r11
+   r12=cell(i)%r12/r11 
+   cell(i)%r12=r12
+   r22=cell(i)%r22
+   cell(i)%r22=dsqrt(r22-r12*r12)
+enddo
+
 
 end subroutine LSQR_Coeff
 
 
-!========================================================
-
+!subroutine LSQR_Coeff
+!use param
+!use grid
+!implicit none
+!
+!integer(kind=i4) :: i,j,c,in,out
+!real(kind=dp)    :: dx,dy,xc,yc
+!real(kind=dp)    :: r11,r12,r22
+!real(kind=dp),dimension(2*ndim,noc):: dmat
+!
+!cell(:)%r11=0.0_dp
+!cell(:)%r12=0.0_dp
+!cell(:)%r22=0.0_dp
+!cell(:)%det=0.0_dp
+!
+!do i=startFC,endFC
+!   in   =fc(i)%in   
+!   out  =fc(i)%out  
+!   dx=cell(out)%cen(1)-cell(in)%cen(1)
+!   dy=cell(out)%cen(2)-cell(in)%cen(2)
+!   cell(in )%r11=cell(in )%r11+dx*dx
+!   cell(in )%r12=cell(in )%r12+dx*dy
+!   cell(in )%r22=cell(in )%r22+dy*dy
+!
+!   dx=cell(in)%cen(1)-cell(out)%cen(1)
+!   dy=cell(in)%cen(2)-cell(out)%cen(2)
+!   cell(out)%r11=cell(out)%r11+dx*dx
+!   cell(out)%r12=cell(out)%r12+dx*dy
+!   cell(out)%r22=cell(out)%r22+dy*dy
+!enddo
+!
+!do i=startBC,endBC
+!   in   =fc(i)%in   
+!   !out  =fc(i)%out  
+!   !if(out<0) print*,i,in,out 
+!     
+!   dx=fc(i)%cen(1)-cell(in)%cen(1)
+!   dy=fc(i)%cen(2)-cell(in)%cen(2)
+!
+!   cell(in)%r11=cell(in)%r11+dx*dx
+!   cell(in)%r12=cell(in)%r12+dx*dy
+!   cell(in)%r22=cell(in)%r22+dy*dy
+!enddo
+!
+!do i=1,noc
+!   r11=cell(i)%r11
+!   r12=cell(i)%r12
+!   r22=cell(i)%r22
+!   cell(i)%det=r11*r22-r12*r12
+!   if(dabs(cell(i)%det)<=eps) then
+!     print*,i," det -->  0",r11,r12,r22
+!     stop
+!   endif  
+!enddo 
+!
+!
+!end subroutine LSQR_Coeff
 
 end subroutine geometric  

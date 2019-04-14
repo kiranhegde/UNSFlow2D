@@ -1,5 +1,5 @@
 module param
-use data_type
+use data_type,only:i4,dp
 use commons
 use visc
 use inf

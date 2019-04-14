@@ -81,7 +81,7 @@ do i=1,nof
    ny  = fc(i)%sy
    nl  = dsqrt(nx*nx + ny*ny)
     
-   if(in/=0.and.out/=0) then
+   if(in>0.and.out>0) then
       call con2prim(cell(in)%qc(:))
       prim1(:)=prim(:)
       call con2prim(cell(out)%qc(:))
@@ -100,20 +100,20 @@ do i=1,nof
       cell(in)%la=cell(in)%la+ll
       cell(out)%la=cell(out)%la+ll
       fc(i)%la=ll
-   elseif(in/=0.and.out==0) then
+   elseif(in>0.and.out<0) then
       con(:)=cell(in)%qc(:)
       call con2prim(con)
       un  = u*nx + v*ny
       ll  = dabs(un) + a*nl
       cell(in)%la=cell(in)%la+ll
       fc(i)%la=ll
-   elseif(in==0.and.out/=0) then
-      con(:)=cell(out)%qc(:)
-      call con2prim(con)
-      un  = u*nx + v*ny
-      ll  = dabs(un) + a*nl
-      cell(out)%la=cell(out)%la+ll
-      fc(i)%la=ll
+!   elseif(in==0.and.out/=0) then
+!      con(:)=cell(out)%qc(:)
+!      call con2prim(con)
+!      un  = u*nx + v*ny
+!      ll  = dabs(un) + a*nl
+!      cell(out)%la=cell(out)%la+ll
+!      fc(i)%la=ll
    endif
 
 enddo

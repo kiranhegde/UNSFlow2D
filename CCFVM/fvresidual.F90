@@ -6,8 +6,9 @@ use commons
 use grid 
 use param
 implicit none
-integer(kind=i4) :: i, j, ie, c1, c2
+integer(kind=i4) :: i, j, ie, in, out
 real(kind=dp)    :: qcl(nvar), qcr(nvar),flux(nvar)
+real(kind=dp)    :: distl(ndim),distr(ndim) 
 
 do i=1,noc
    do j=1,nvar
@@ -15,87 +16,65 @@ do i=1,noc
    enddo
 enddo
 
-!     Compute flux for interior edges
+! Compute flux for interior edges
 if (flux_type == 'vanleer') then
-   do ie=1,nof
-      c1 = fc(ie)%in
-      c2 = fc(ie)%out
-      if(c1/=0.and.c2/=0) then 
-         call recon(ie,c1,c2,qcl,qcr)
-         call vanleer_flux(ie,c1,c2,qcl,qcr)
-      if(fc(ie)%bc==1001.and.c1/=0) then 
-         call slip_wall(ie,c1,qcl,qcr)
-         call roe_flux(ie,qcl,qcr,flux)
-         cell(c1)%res(:)=cell(c1)%res(:)+flux(:)
-      endif
-      if(fc(ie)%bc==1001.and.c2/=0) then 
-         call slip_wall(ie,c2,qcl,qcr)
-         call roe_flux(ie,qcl,qcr,flux)
-         cell(c2)%res(:)=cell(c2)%res(:)+flux(:)
-      endif
-      endif
+   do ie=startFC,endFC
+      in = fc(ie)%in
+      out = fc(ie)%out
+      call recon(ie,in,out,qcl,qcr)
+      call vanleer_flux(ie,qcl,qcr,flux)
+      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+      cell(out)%res(:)=cell(out)%res(:)-flux(:)
    enddo
 elseif (flux_type == 'roe') then
-   do ie=1,nof
-      c1 = fc(ie)%in
-      c2 = fc(ie)%out
-      if(c1/=0.and.c2/=0) then 
-         call recon(ie,c1,c2,qcl,qcr)
-         call roe_flux(ie,qcl,qcr,flux)
-         cell(c1)%res(:)=cell(c1)%res(:)+flux(:)
-         cell(c2)%res(:)=cell(c2)%res(:)-flux(:)
-      endif
-      if(fc(ie)%bc==1001.and.c1/=0) then 
-         call slip_wall(ie,c1,qcl,qcr)
-         call roe_flux(ie,qcl,qcr,flux)
-         cell(c1)%res(:)=cell(c1)%res(:)+flux(:)
-      endif
-      if(fc(ie)%bc==1001.and.c2/=0) then 
-         call slip_wall(ie,c2,qcl,qcr)
-         call roe_flux(ie,qcl,qcr,flux)
-         cell(c2)%res(:)=cell(c2)%res(:)+flux(:)
-      endif
-
-!   if(fc(ie)%bc==1001.and.c1/=0)  call solid_flux(ie,c1)
-!   if(fc(ie)%bc==1001.and.c2/=0)  call solid_flux(ie,c2)
+   do ie=startFC,endFC
+      in = fc(ie)%in
+      out = fc(ie)%out
+      call recon(ie,in,out,qcl,qcr)
+      call roe_flux(ie,qcl,qcr,flux)
+      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+      cell(out)%res(:)=cell(out)%res(:)-flux(:)
    enddo
 elseif (flux_type == 'ausm') then
-   do ie=1,nof
-      c1 = fc(ie)%in
-      c2 = fc(ie)%out
-      if(c1/=0.and.c2/=0) then 
-         call recon(ie,c1,c2,qcl,qcr)
-         call ausmPlus_flux(ie,c1,c2,qcl,qcr)
-      endif 
-      if(fc(ie)%bc==1001.and.c1/=0) then 
-         call slip_wall(ie,c1,qcl,qcr)
-         call roe_flux(ie,qcl,qcr,flux)
-         cell(c1)%res(:)=cell(c1)%res(:)+flux(:)
-      endif
-      if(fc(ie)%bc==1001.and.c2/=0) then 
-         call slip_wall(ie,c2,qcl,qcr)
-         call roe_flux(ie,qcl,qcr,flux)
-         cell(c2)%res(:)=cell(c2)%res(:)+flux(:)
-      endif
+   do ie=startFC,endFC
+      in = fc(ie)%in
+      out = fc(ie)%out
+      call recon(ie,in,out,qcl,qcr)
+      call ausmPlus_flux(ie,qcl,qcr,flux)
+      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+      cell(out)%res(:)=cell(out)%res(:)-flux(:)
    enddo
 endif
 
-!     Compute flux for solid wall edges
+! Compute flux for boundary edges
+do ie=startBC,endBC
+   qcl=0.d0
+   qcr=0.d0
+   distl=0.0_dp
+   in = fc(ie)%in
+   distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
+   !distr(:)=fc(ie)%cen(:)-cell(out)%cen(:)
 
-!do ie=1,nof
-!   c1 = fc(ie)%in
-!   c2 = fc(ie)%out
-!   if(fc(ie)%bc==1001.and.c1/=0)  call solid_flux(ie,c1)
-!   if(fc(ie)%bc==1001.and.c2/=0)  call solid_flux(ie,c2)
-!enddo
+   do i=1,nvar
+      qcl(i)=cell(in)%qp(i)+sum(cell(in)%grad(:,i)*distl(:))
+   enddo  
 
-!     Flux for far-field points
-
-do ie=1,nof
-   c1 = fc(ie)%in
-   c2 = fc(ie)%out
-   if(fc(ie)%bc==2001.and.c1/=0)  call farfield_flux(ie,c1)
-   if(fc(ie)%bc==2001.and.c2/=0)  call farfield_flux(ie,c2)
+   if(fc(ie)%bc==2001.and.in>0) then  
+      call farfield_flux(ie,qcl,qcr)
+      qcr=fs_inf
+      if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
+      if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
+      if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+   endif
+   ! Slip BC on wall (Euler)
+   if(fc(ie)%bc==1001.and.in>0) then 
+      call slip_wall(ie,qcl,qcr)
+      if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
+      if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
+      if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+   endif
 enddo
 
 
@@ -114,12 +93,12 @@ endif
 end
 
 
-subroutine recon(ie,c1,c2,qcl,qcr)
+subroutine recon(ie,in,out,qcl,qcr)
 use commons
 use pri
 use grid
 implicit none
-integer(kind=i4) :: i,ie,c1,c2
+integer(kind=i4) :: i,ie,in,out
 real(kind=dp)    :: qcl(nvar), qcr(nvar)
 real(kind=dp)    :: distl(ndim),distr(ndim) 
 
@@ -129,14 +108,14 @@ qcr(:)=0.d0
 distl=0.0_dp
 distr=0.0_dp
 
-distl(:)=fc(ie)%cen(:)-cell(c1)%cen(:)
-distr(:)=fc(ie)%cen(:)-cell(c2)%cen(:)
+distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
+distr(:)=fc(ie)%cen(:)-cell(out)%cen(:)
 
 do i=1,nvar
    !Left state
-   qcl(i)=cell(c1)%qp(i)+sum(cell(c1)%grad(:,i)*distl(:))
+   qcl(i)=cell(in)%qp(i)+sum(cell(in)%grad(:,i)*distl(:))
    !Right state
-   qcr(i)=cell(c2)%qp(i)+sum(cell(c2)%grad(:,i)*distr(:))
+   qcr(i)=cell(out)%qp(i)+sum(cell(out)%grad(:,i)*distr(:))
 enddo
 
 end subroutine recon 

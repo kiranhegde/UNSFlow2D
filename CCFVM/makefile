@@ -3,7 +3,7 @@ TARGETDIR="/home/kiranhegde/FlowSolvers/UNSFlow2DRun/"
 #TARGETDIR="./"
 
 FC     =gfortran
-FFLAGS = -march=native  -O5 -pipe -ffree-form \
+FFLAGS = -march=native  -O5  -pipe -ffree-form \
 			-Wall -Wextra -Wtabs -Wintrinsics-std -Wsurprising -Waliasing \
 			-Wno-unused-parameter -Wno-unused-dummy-argument \
 			-Wno-unused-variable  -Warray-bounds  -fcheck=all -fbounds-check  \
@@ -11,8 +11,9 @@ FFLAGS = -march=native  -O5 -pipe -ffree-form \
                         -Wcharacter-truncation -Wconversion -Wfunction-elimination \
                         -Wintrinsic-shadow -Wintrinsics-std \
                         -Wline-truncation -Wno-align-commons -Wno-tabs -Wreal-q-constant \
-                        -Wsurprising -Wunderflow -Wunused-parameter \
-                        -fbacktrace
+                        -Wsurprising -Wunderflow -Wunused-parameter -Wunused -Wuninitialized  \
+                        -fbacktrace  \
+                        -ffpe-summary=zero,overflow,underflow,denormal
                        # -Wimplicit-procedure -Wimplicit-interface\ 
                        # -Wuse-without-only -fbacktrace -Wrealloc-lhs -Wimplicit-interface\
                        # -fbacktrace -fdump-fortran-optimized -fdump-fortran-original

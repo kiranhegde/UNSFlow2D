@@ -92,30 +92,44 @@ endif
 if(inpstatus .eq. no) stop
 
 end
-
 !========================================================
 subroutine read_grid
 use data_type,only:i4
 !use param
-use grid,only:cells,fc,pt,cell,nop,noc,nof,noc_bc
+use grid,only:cells,fc,pt,cell,nop,noc,nof,noc_bc,nbf,startBC,endBC,startfc,endfc
 implicit none
 
-integer(kind=i4) :: i,j
+integer(kind=i4) :: i,j,nnfc
 integer(kind=i4) :: ghostcell
 type(cells),allocatable,dimension(:)::elm
 
 open(3,file='geometry.inp')
-read(3,*)nop,noc,nof
+read(3,*)nop,noc,nof,nbf
+! start index of internal faces
+startFC=1
+! end index of internal faces
+endFC=nof
+
+! start index of boundary faces
+startBC=nof+1
+!  end  index of boundary faces
+endBC=nof+nbf
+
+! total no. of face
+nof=nof+nbf
+
 allocate(pt(nop),fc(nof),elm(noc))
 do i=1,nop
  read(3,*)j,pt(i)%x,pt(i)%y,pt(i)%bc
 enddo
 do i=1,noc
- !read(3,*)j,cell(i)%cen(1),cell(i)%cen(2),cell(i)%cv
  read(3,*)j,elm(i)%cen(1),elm(i)%cen(2),elm(i)%cv
 enddo
-do i=1,nof
+do i=startFC,endFC
  read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%out,fc(i)%sx,fc(i)%sy,fc(i)%bc
+enddo
+do i=startBC,endBC
+ read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%sx,fc(i)%sy,fc(i)%bc
 enddo
 close(3)
 
@@ -153,3 +167,64 @@ write(*,'(10x, "ymax =", f18.3)') maxval(pt(:)%y)
 
 
 end subroutine read_grid
+
+!========================================================
+!subroutine read_grid1
+!use data_type,only:i4
+!!use param
+!use grid,only:cells,fc,pt,cell,nop,noc,nof,noc_bc
+!implicit none
+!
+!integer(kind=i4) :: i,j
+!integer(kind=i4) :: ghostcell
+!type(cells),allocatable,dimension(:)::elm
+!
+!open(3,file='geometry.inp')
+!read(3,*)nop,noc,nof
+!allocate(pt(nop),fc(nof),elm(noc))
+!do i=1,nop
+! read(3,*)j,pt(i)%x,pt(i)%y,pt(i)%bc
+!enddo
+!do i=1,noc
+! !read(3,*)j,cell(i)%cen(1),cell(i)%cen(2),cell(i)%cv
+! read(3,*)j,elm(i)%cen(1),elm(i)%cen(2),elm(i)%cv
+!enddo
+!do i=1,nof
+! read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%out,fc(i)%sx,fc(i)%sy,fc(i)%bc
+!enddo
+!close(3)
+!
+!ghostcell=0
+!noc_bc=noc
+!if(ghostcell==1) then
+!do i=1,nof
+!   if(fc(i)%in==0) then 
+!     noc_bc=noc_bc+1
+!     fc(i)%in=noc_bc
+!   elseif(fc(i)%out==0) then 
+!     noc_bc=noc_bc+1
+!     fc(i)%out=noc_bc
+!   endif  
+!enddo
+!endif
+!
+!allocate(cell(noc_bc))
+!do i=1,noc
+!   cell(i)%cen(1)=elm(i)%cen(1) 
+!   cell(i)%cen(2)=elm(i)%cen(2) 
+!   cell(i)%cv    =elm(i)%cv 
+!enddo
+!
+!deallocate(elm)
+!
+!
+!write(*,'( "Number of Ghost cells =",i10)')noc_bc-noc
+!
+!write(*,'(" Bounding box:")')
+!write(*,'(10x, "xmin =", f18.3)') minval(pt(:)%x) 
+!write(*,'(10x, "xmax =", f18.3)') maxval(pt(:)%x) 
+!write(*,'(10x, "ymin =", f18.3)') minval(pt(:)%y)
+!write(*,'(10x, "ymax =", f18.3)') maxval(pt(:)%y) 
+!
+!
+!end subroutine read_grid1

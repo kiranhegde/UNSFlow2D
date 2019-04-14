@@ -3,6 +3,7 @@
 !------------------------------------------------------------------------------
 program main
 use param
+use pri
 use grid
 implicit none
 integer(kind=i4)  :: i, j, irk
@@ -16,6 +17,8 @@ ts=0.0_sp
 te=0.0_sp
 
 
+
+
 !    Set some constants
 call math
 
@@ -27,6 +30,7 @@ call geometric
 
 ! Set initial condition
 call initialize
+
 
 !     Runge-Kutta time stepping
 if(timemode=="rk3".and.cfl_max > 1.0d0) then
@@ -56,6 +60,13 @@ do while(iter .lt. MAXITER .and. fres .gt. MINRES)
    iter = iter + 1
    cfl = 0.5d0*cfl_max*(1+dtanh(iter*7.d0/500.0 - 3.5))
    !cfl = 0.5d0*cfl_max*(1+dtanh(iter*10.d0/1000.0 - 5.0))
+   do i=1,noc
+      call con2prim(cell(i)%qc(1:nvar))
+      do j=1,nvar
+         cell(i)%qp(j)=prim(j)
+      enddo
+   enddo
+
    call avg_c2v
    !call time_step2
    call time_step02

@@ -1,20 +1,11 @@
-
 subroutine avg_c2v 
 use grid 
 use pri
 use commons
 implicit none
-integer(kind=i4) :: i,j,c,k
+integer(kind=i4) :: i,j,c,k,p1,p2
 real(kind=dp) :: con(nvar)
 real(kind=dp) :: wt,cwt
-
-
-do i=1,noc
-      call con2prim(cell(i)%qc(1:nvar))
-      do k=1,nvar
-         cell(i)%qp(k)=prim(k)
-      enddo
-enddo
 
 do i=1,nop
 
@@ -32,6 +23,13 @@ do i=1,nop
     do k=1,nvar
        pt(i)%prim(k)=con(k)/wt    
     enddo
+end do
+
+! face average
+do i=1,nof
+   p1=fc(i)%pt(1)   
+   p2=fc(i)%pt(2)
+   fc(i)%qp(:)=0.5d0*(pt(p1)%prim(:)+pt(p2)%prim(:))
 end do
 
 

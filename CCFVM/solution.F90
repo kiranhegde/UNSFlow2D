@@ -39,6 +39,11 @@ v_inf=qinf(4)/qinf(2)
 T_infd  = 300.0d0
 SCONST  = 110.4d0*T_inf/T_infd
 
+fs_inf(1)=r_inf
+fs_inf(2)=u_inf
+fs_inf(3)=v_inf
+fs_inf(4)=p_inf
+
 
 
 !     Print some useful info
@@ -54,6 +59,7 @@ write(*,'(5x, " Pressure    =", f15.6)')p_inf
 
 do j=1,noc
    cell(j)%qc(:) = qinf(:)
+   cell(j)%phi(:) = 1.0_dp 
 enddo
 
 end

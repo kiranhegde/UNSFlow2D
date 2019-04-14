@@ -1,17 +1,18 @@
 !==============================================================================
-subroutine ausmPlus_flux(ie,c1,c2,qcl,qcr)
+subroutine ausmPlus_flux(ie,qcl,qcr,flux)
 !==============================================================================
 !#     computes total convective flux across a face using van leer
 !#  flux vector splitting method given left and right conserved states
 !#
 !#     ql,qr - left & right vector of conserved variables.
 !------------------------------------------------------------------------------
+use data_type,only:dp,i4
 use commons
 use pri
 use grid
 implicit none
 !------------------------------------------------------------------------------
-integer(kind=i4):: i,ie,c1,c2
+integer(kind=i4):: i,ie
 real(kind=dp):: flux(nvar)
 real(kind=dp):: rl, ul, vl, pl, cl, unl, ml, hl,al2,ql2
 real(kind=dp):: rr, ur, vr, pr, cr, unr, mr, hr,ar2,qr2
@@ -128,11 +129,11 @@ fluxP(4)=ny*P12
 
 
 do i=1,nvar
-temp  =mass12*flux(i)+fluxP(i)
-cell(c1)%res(i)=cell(c1)%res(i)+area*temp
-cell(c2)%res(i)=cell(c2)%res(i)-area*temp
+flux(i) =mass12*flux(i)+fluxP(i)
+!cell(c1)%res(i)=cell(c1)%res(i)+area*temp
+!cell(c2)%res(i)=cell(c2)%res(i)-area*temp
 enddo
-
+flux=flux*area
 
 end subroutine ausmPlus_flux 
 !==============================================================================
