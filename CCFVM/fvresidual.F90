@@ -8,7 +8,7 @@ use param
 implicit none
 integer(kind=i4) :: i, j, ie, in, out
 real(kind=dp)    :: qcl(nvar), qcr(nvar),flux(nvar)
-real(kind=dp)    :: distl(ndim),distr(ndim) 
+real(kind=dp)    :: distl(ndim)!,distr(ndim) 
 
 do i=1,noc
    do j=1,nvar
@@ -44,6 +44,15 @@ elseif (flux_type == 'ausm') then
       cell(in)%res(:)=cell(in)%res(:)+flux(:)
       cell(out)%res(:)=cell(out)%res(:)-flux(:)
    enddo
+elseif (flux_type == 'rusanov') then
+   do ie=startFC,endFC
+      in = fc(ie)%in
+      out = fc(ie)%out
+      call recon(ie,in,out,qcl,qcr)
+      call rusanov_flux(ie,qcl,qcr,flux)
+      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+      cell(out)%res(:)=cell(out)%res(:)-flux(:)
+   enddo
 endif
 
 ! Compute flux for boundary edges
@@ -65,6 +74,7 @@ do ie=startBC,endBC
       if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
       if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
       if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+      if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
       cell(in)%res(:)=cell(in)%res(:)+flux(:)
    endif
    ! Slip BC on wall (Euler)
@@ -73,6 +83,7 @@ do ie=startBC,endBC
       if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
       if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
       if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+      if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
       cell(in)%res(:)=cell(in)%res(:)+flux(:)
    endif
 enddo

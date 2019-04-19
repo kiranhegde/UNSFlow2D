@@ -1086,8 +1086,8 @@ use param
 use grid
 implicit none
 
-integer(kind=i4) :: i,j,c
-real(kind=dp)    :: dx,dy,xc,yc
+integer(kind=i4) :: i
+real(kind=dp)    :: dx,dy,xo,yo,xi,yi,ds
 real(kind=dp)    :: r11,r12,r22
 
 cell(:)%r11=0.0_dp
@@ -1095,28 +1095,38 @@ cell(:)%r12=0.0_dp
 cell(:)%r22=0.0_dp
 
 do i=startFC,endFC
-   in   =fc(i)%in   
-   out  =fc(i)%out  
-   dx=cell(out)%cen(1)-cell(in)%cen(1)
-   dy=cell(out)%cen(2)-cell(in)%cen(2)
-   cell(in )%r11=cell(in )%r11+dx*dx
-   cell(in )%r12=cell(in )%r12+dx*dy
-   cell(in )%r22=cell(in )%r22+dy*dy
+   in  =fc(i)%in   
+   out =fc(i)%out  
+   xi = cell(in)%cen(1)
+   yi = cell(in)%cen(2)
+   xo = cell(out)%cen(1)
+   yo = cell(out)%cen(2)
+   dx = xo-xi 
+   dy = yo-yi 
+   ds=1.0_dp/dsqrt(dx*dx+dy*dy)
+   cell(in )%r11=cell(in )%r11+ds*dx*dx
+   cell(in )%r12=cell(in )%r12+ds*dx*dy
+   cell(in )%r22=cell(in )%r22+ds*dy*dy
 
-   dx=cell(in)%cen(1)-cell(out)%cen(1)
-   dy=cell(in)%cen(2)-cell(out)%cen(2)
-   cell(out)%r11=cell(out)%r11+dx*dx
-   cell(out)%r12=cell(out)%r12+dx*dy
-   cell(out)%r22=cell(out)%r22+dy*dy
+   dx = xi-xo 
+   dy = yi-yo 
+   cell(out)%r11=cell(out)%r11+ds*dx*dx
+   cell(out)%r12=cell(out)%r12+ds*dx*dy
+   cell(out)%r22=cell(out)%r22+ds*dy*dy
 enddo
 
 do i=startBC,endBC
    in =fc(i)%in   
-   dx=fc(i)%cen(1)-cell(in)%cen(1)
-   dy=fc(i)%cen(2)-cell(in)%cen(2)
-   cell(in)%r11=cell(in)%r11+dx*dx
-   cell(in)%r12=cell(in)%r12+dx*dy
-   cell(in)%r22=cell(in)%r22+dy*dy 
+   xi = cell(in)%cen(1)
+   yi = cell(in)%cen(2)
+   xo = fc(i)%cen(1)
+   yo = fc(i)%cen(2)
+   dx = xo-xi 
+   dy = yo-yi 
+   ds=1.0_dp/dsqrt(dx*dx+dy*dy)
+   cell(in)%r11=cell(in)%r11+ds*dx*dx
+   cell(in)%r12=cell(in)%r12+ds*dx*dy
+   cell(in)%r22=cell(in)%r22+ds*dy*dy 
 enddo
 
 do i=1,noc

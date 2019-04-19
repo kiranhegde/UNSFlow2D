@@ -4,14 +4,14 @@ use grid
 use commons
 use param,only:ilimit
 implicit none
-integer(kind=i4) :: i,j,k,c,in,out,p1,p2
-real(kind=dp)    :: xn,yn,xc,yc,dx,dy,wt,var
+integer(kind=i4) :: i,k,in,out,p1,p2
+real(kind=dp)    :: xn,yn,xc,yc,dx,dy,ds,var
 real(kind=dp)    :: wx0,wy0,wx1,wy1     
 real(kind=dp)    :: r11,r12,r22,alfa1,alfa2
 
 
 do i=1,noc
-   cell(i)%grad(:,:)=0.d0
+   cell(i)%grad=0.d0
 enddo
 
 do i=startFC,endFC
@@ -23,6 +23,7 @@ do i=startFC,endFC
    yn=cell(out)%cen(2)
    dx=xn-xc
    dy=yn-yc
+   ds=1.0_dp/dsqrt(dx*dx+dy*dy)
    r11=cell(in)%r11
    r12=cell(in)%r12
    r22=cell(in)%r22
@@ -44,10 +45,11 @@ do i=startFC,endFC
    wy1=alfa2
 
    do k=1,nvar
-      cell(in)%grad(1,k)=cell(in)%grad(1,k)+(cell(out)%qp(k)-cell(in)%qp(k))*wx0
-      cell(in)%grad(2,k)=cell(in)%grad(2,k)+(cell(out)%qp(k)-cell(in)%qp(k))*wy0
-      cell(out)%grad(1,k)=cell(out)%grad(1,k)+(cell(in)%qp(k)-cell(out)%qp(k))*wx1
-      cell(out)%grad(2,k)=cell(out)%grad(2,k)+(cell(in)%qp(k)-cell(out)%qp(k))*wy1
+      var=cell(out)%qp(k)-cell(in)%qp(k) 
+      cell(in)%grad(1,k)=cell(in)%grad(1,k)+var*wx0
+      cell(in)%grad(2,k)=cell(in)%grad(2,k)+var*wy0
+      cell(out)%grad(1,k)=cell(out)%grad(1,k)-var*wx1
+      cell(out)%grad(2,k)=cell(out)%grad(2,k)-var*wy1
    enddo
 
 enddo
@@ -59,6 +61,7 @@ do i=startBC,endBC
    p2=fc(i)%pt(2)
    dx=fc(i)%cen(1)-cell(in)%cen(1)
    dy=fc(i)%cen(2)-cell(in)%cen(2)
+   ds=1.0_dp/dsqrt(dx*dx+dy*dy)
    r11=cell(in)%r11
    r12=cell(in)%r12
    r22=cell(in)%r22
@@ -68,9 +71,9 @@ do i=startBC,endBC
    wy0=alfa2
 
    do k=1,nvar
-      var=0.5_dp*(pt(p1)%prim(k)+pt(p2)%prim(k))
-      cell(in)%grad(1,k)=cell(in)%grad(1,k)+(var-cell(in)%qp(k))*wx0
-      cell(in)%grad(2,k)=cell(in)%grad(2,k)+(var-cell(in)%qp(k))*wy0
+      var=0.5_dp*(pt(p1)%prim(k)+pt(p2)%prim(k))-cell(in)%qp(k)
+      cell(in)%grad(1,k)=cell(in)%grad(1,k)+var*wx0
+      cell(in)%grad(2,k)=cell(in)%grad(2,k)+var*wy0
    enddo
 enddo
 
@@ -163,11 +166,8 @@ use commons
 use param,only:ilimit
 
 implicit none
-integer(kind=i4) :: i,j,k,in,out,c,p1,p2,ps
-real(kind=dp) :: var,dx,dy,xc,yc 
-real(kind=dp) :: ql(nvar),qr(nvar)
-real(kind=dp) :: nr, dr, phi, q_min, q_max,kappa
-real(kind=dp) :: TOL,alfa,D_L,D_L0,check,dotprod
+integer(kind=i4) :: i,j,in,out
+real(kind=dp) :: var,dx,dy
 
 do i=1,noc
    cell(i)%grad(:,:)=0.d0
@@ -220,14 +220,13 @@ use grid
 use commons
 use param,only:ilimit
 implicit none
-integer(kind=i4) :: i,j,k,ie,in,out,p1,p2,c
+integer(kind=i4) :: i,j,in,out,p1,p2
 integer(kind=i4),parameter :: nn=3
-real(kind=dp) :: q2, pv(nvar)
-real(kind=dp) :: x1,y1,x2,y2,dx,dy
+!real(kind=dp) :: q2, pv(nvar)
+real(kind=dp) :: dx,dy
 
-real(kind=dp) :: area,a1,a2
-real(kind=dp) :: nr, dr, phi, q_min, q_max,kappa
-real(kind=dp) :: TOL,alfa,D_L,D_L0,gradxy(ndim,nvar)
+real(kind=dp) :: a1,a2
+real(kind=dp) :: gradxy(ndim,nvar)
 real(kind=dp) :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
 
 
@@ -316,8 +315,8 @@ contains
 
 subroutine gradtrixy(prim,xy,grad,area,nn)
 implicit none
-integer(kind=i4) :: i,j,nn,ip1
-real(kind=dp)    :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn),var(nvar)
+integer(kind=i4) :: i,nn,ip1
+real(kind=dp)    :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
 real(kind=dp)    :: area 
 
 ! area of a polygon

@@ -70,9 +70,10 @@ if(grad_type /= 'gg'.and. grad_type /= 'lsqr'.and.grad_type /= 'ggfc')then
    inpstatus = no
 endif
 
-if(flux_type /= 'roe' .and. flux_type /= 'ausm'.and.flux_type /= 'vanleer')then
+if(flux_type /= 'roe' .and. flux_type /= 'ausm'.and.flux_type /= &
+    & 'vanleer'.and.flux_type /= 'rusanov')then
    print*,'Unknown flux ', flux_type
-   print*,'Possible values: roe, ausm , vanleer'
+   print*,'Possible values: roe, ausm, vanleer, rusanov'
    inpstatus = no
 endif
 
@@ -99,7 +100,7 @@ use data_type,only:i4
 use grid,only:cells,fc,pt,cell,nop,noc,nof,noc_bc,nbf,startBC,endBC,startfc,endfc
 implicit none
 
-integer(kind=i4) :: i,j,nnfc
+integer(kind=i4) :: i,j
 integer(kind=i4) :: ghostcell
 type(cells),allocatable,dimension(:)::elm
 

@@ -1,22 +1,27 @@
-! Roe flux function
 subroutine roe_flux(ie,qcl,qcr,flux)
+! --------------------------------------------------
+! convective flux across a face using Roe's scheme
+! ie   - interface edge number
+! qcl  - left state, primitive variables(rho,u,v,p)
+! qcr  - right state, primitive variables(rho,u,v,p)
+! flux - interface flux 
+! --------------------------------------------------
 use data_type,only:dp,i4
 use commons ,only : gamma,gamma1,nvar 
 use grid,only : fc
 implicit none
-real(kind=dp) ::  qcl(nvar), qcr(nvar), qvl(nvar),qvr(nvar),flux(nvar)
-
-integer(kind=i4)  :: i,ie,c1,c2
-real(kind=dp) :: rl, ul, vl, pl, al2, hl, rr, ur, vr, pr, ar2, hr, &
-            ua, va, qa2, aa2, aa, ha, &
-            ql2, qr2, rl12, rr12, rd, &
-            unl, unr, una, vna, F_c(4), Fd(4), &
-            m1, m2, a1, a2, a3, a4, l1, l2, l3, l4, &
-            a1l1, a2l2, a3l3, a4l4, aact, aast, &
-            du1, du2, du3, du4, li(4), &
-            e1, e4, del
-real(kind=dp), parameter :: ETOL=0.01d0
-real(kind=dp):: nx,ny,area,dist
+integer(kind=i4) :: i,ie
+real(kind=dp)    :: qcl(nvar), qcr(nvar), qvl(nvar),qvr(nvar),flux(nvar)
+real(kind=dp)    :: nx,ny,area
+real(kind=dp)    :: rl, ul, vl, pl, al2, hl, rr, ur, vr, pr, ar2, hr, &
+                    ua, va, qa2, aa2, aa, ha, &
+                    ql2, qr2, rl12, rr12, rd, &
+                    unl, unr, una, vna, F_c(4), Fd(4), &
+                    m1, m2, a1, a2, a3, a4, l1, l2, l3, l4, &
+                    a1l1, a2l2, a3l3, a4l4, aact, aast, &
+                    du1, du2, du3, du4, li(4), &
+                    e1, e4, del
+real(kind=dp),parameter :: ETOL=0.01d0
 
 nx = fc(ie)%sx
 ny = fc(ie)%sy
@@ -48,10 +53,10 @@ unl = ul*nx + vl*ny
 unr = ur*nx + vr*ny
 
 !     Centered flux
+f_c(1) = rl*hl*unl         + rr*hr*unr
 f_c(2) = rl*unl            + rr*unr
 f_c(3) = pl*nx + rl*ul*unl + pr*nx + rr*ur*unr
 f_c(4) = pl*ny + rl*vl*unl + pr*ny + rr*vr*unr
-f_c(1) = rl*hl*unl         + rr*hr*unr
 
 !     Roe average
 rl12 = dsqrt(rl)
@@ -113,10 +118,10 @@ du4 = (rr*hr - pr) - (rl*hl - pl)
 m1 = (nx*du2 + ny*du3 - una*du1)/aa
 m2 = GAMMA1*(du4 - ua*du2 - va*du3 + qa2*du1)/aa**2
 
-a4 = 0.5d0*(m1 + m2)
 a1 = 0.5d0*(m2 - m1)
-a3 = du1 - a1 - a4
 a2 = ( ny*du2 - nx*du3 + vna*du1 )/aa
+a4 = 0.5d0*(m1 + m2)
+a3 = du1 - a1 - a4
 
 !     Diffusive flux
 a1l1  = a1*l1

@@ -240,8 +240,8 @@ use param
 use pri
 use grid
 implicit none
-integer(kind=i4) :: i,j,k,c
-real(kind=dp) :: x1,x2,y1,y2,con(nvar)
+integer(kind=i4) :: i,j,c
+real(kind=dp) :: con(nvar)
 
 !i=1
 !      print*
@@ -307,9 +307,9 @@ SUBROUTINE tecplt
 use param
 use grid
 implicit none
-integer(kind=i4) :: i,j,c, funit
+integer(kind=i4) :: i,j,funit
 real(kind=dp) :: q2, mach,entropy
-real(kind=dp) :: ro,uo,vo,po,x1,x2,y1,y2
+real(kind=dp) :: ro,uo,vo,po
 character(len=15) :: ctype
 
 if(maxval(cell(:)%nc2f) == 3) ctype="TRIANGLE"

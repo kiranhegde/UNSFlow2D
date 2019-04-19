@@ -3,8 +3,8 @@ use commons
 !use pri
 use grid
 implicit none
-integer(kind=i4):: ie,cc
-real(kind=dp) :: ds,nx,ny,con(nvar),un
+integer(kind=i4):: ie
+real(kind=dp) :: ds,nx,ny,un
 real(kind=dp) :: qcl(nvar), qcr(nvar)
 
 nx=fc(ie)%sx
@@ -32,12 +32,12 @@ use grid
 use pri
 use inf
 implicit none
-integer(kind=i4)  :: i,ie,cc
+integer(kind=i4)  :: ie
 real(kind=dp) :: qcl(nvar), qcr(nvar)
-real(kind=dp) :: dr, nx, ny, q2,un,con(nvar)
+real(kind=dp) :: dr, nx, ny, q2,un
 real(kind=dp) :: uinf, vinf, pinf, rinf, ainf
 real(kind=dp) :: Rp,Rm,rhof,uf,vf,pf,af,Unf,Sf,Ef
-real(kind=dp) :: q2inf,un_inf,flux(nvar)
+real(kind=dp) :: q2inf,un_inf
 
 
 nx = fc(ie)%sx

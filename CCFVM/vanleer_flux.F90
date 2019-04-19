@@ -1,12 +1,11 @@
-!==============================================================================
 subroutine vanleer_flux(ie,qcl,qcr,flux)
-use data_type,only:dp,i4
-!==============================================================================
-!#  computes total convective flux across a face using van leer
-!#  flux vector splitting method given left and right conserved states
-!#
-!#     qcl,qcr - left & right vector of conserved variables.
+! convective flux across a face using VanLeer's scheme
+! ie   - interface edge number
+! qcl  - left state, primitive variables(rho,u,v,p)
+! qcr  - right state, primitive variables(rho,u,v,p)
+! flux - interface flux 
 !------------------------------------------------------------------------------
+use data_type,only:dp,i4
 use commons
 use pri
 use grid
@@ -20,7 +19,7 @@ real(kind=dp):: p12, plp, prm, fmass12, delta
 real(kind=dp):: fmass_p,fmass_m,dissi
 real(kind=dp):: fluxL(nvar),fluxR(nvar),fluxP(nvar),flux(nvar)
 real(kind=dp):: qcl(nvar), qcr(nvar)
-real(kind=dp):: nx,ny,area,dist
+real(kind=dp):: nx,ny,area
 
 !------------------------------------------------------------------------------
 nx = fc(ie)%sx 
@@ -95,8 +94,6 @@ fluxP(4)=ny*P12
 fluxP(1)=delta
 do i=1,nvar
 flux(i) =0.5d0*fmass12*(fluxL(i)+fluxR(i))-0.5d0*dissi*(fluxR(i)-fluxL(i))+fluxP(i)
-!cell(c1)%res(i)=cell(c1)%res(i)+flux*area
-!cell(c2)%res(i)=cell(c2)%res(i)-flux*area
 enddo
 
 flux=flux*area

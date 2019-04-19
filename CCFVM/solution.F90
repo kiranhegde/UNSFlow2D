@@ -119,7 +119,7 @@ use param
 use grid
 implicit none
 integer(kind=i4)  :: i, j
-real(kind=dp) :: fr
+!real(kind=dp) :: fr
 !real(kind=dp),parameter :: small = 1.0d-10
 
 

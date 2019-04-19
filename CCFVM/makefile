@@ -6,12 +6,13 @@ FC     =gfortran
 FFLAGS = -march=native  -O5  -pipe -ffree-form \
 			-Wall -Wextra -Wtabs -Wintrinsics-std -Wsurprising -Waliasing \
 			-Wno-unused-parameter -Wno-unused-dummy-argument \
-			-Wno-unused-variable  -Warray-bounds  -fcheck=all -fbounds-check  \
+			-Warray-bounds  -fcheck=all -fbounds-check  \
                         -Waliasing -Wall -Wampersand -Warray-bounds -Wc-binding-type \
                         -Wcharacter-truncation -Wconversion -Wfunction-elimination \
                         -Wintrinsic-shadow -Wintrinsics-std \
                         -Wline-truncation -Wno-align-commons -Wno-tabs -Wreal-q-constant \
-                        -Wsurprising -Wunderflow -Wunused-parameter -Wunused -Wuninitialized  \
+                        -Wsurprising -Wunderflow \
+                        -Wunused-parameter -Wunused -Wuninitialized  \
                         -fbacktrace  \
                         -ffpe-summary=zero,overflow,underflow,denormal
                        # -Wimplicit-procedure -Wimplicit-interface\ 
