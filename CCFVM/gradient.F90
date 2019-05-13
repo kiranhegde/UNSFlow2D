@@ -181,10 +181,10 @@ do i=startFC,endFC
 
    do j=1,nvar
       var=fc(i)%qp(j)
-      cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
-      cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
-      cell(out)%grad(1,j)=cell(out)%grad(1,j)-var*dx
-      cell(out)%grad(2,j)=cell(out)%grad(2,j)-var*dy
+      cell(in)%grad(1,j)=cell(in)%grad(1,j)-var*dx
+      cell(in)%grad(2,j)=cell(in)%grad(2,j)-var*dy
+      cell(out)%grad(1,j)=cell(out)%grad(1,j)+var*dx
+      cell(out)%grad(2,j)=cell(out)%grad(2,j)+var*dy
    enddo
 enddo
 
@@ -204,8 +204,8 @@ enddo
 do i=1,noc
    var=cell(i)%cv
    do j=1,nvar
-   cell(i)%grad(1,j)=cell(i)%grad(1,j)/var
-   cell(i)%grad(2,j)=cell(i)%grad(2,j)/var
+      cell(i)%grad(1,j)=cell(i)%grad(1,j)/var
+      cell(i)%grad(2,j)=cell(i)%grad(2,j)/var
    enddo
 enddo
 

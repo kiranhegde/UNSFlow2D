@@ -14,9 +14,10 @@ FFLAGS = -march=native  -O5  -pipe -ffree-form \
                         -Wsurprising -Wunderflow \
                         -Wunused-parameter -Wunused -Wuninitialized  \
                         -fbacktrace  \
-                        -ffpe-summary=zero,overflow,underflow,denormal
-                       # -Wimplicit-procedure -Wimplicit-interface\ 
-                       # -Wuse-without-only -fbacktrace -Wrealloc-lhs -Wimplicit-interface\
+                        -ffpe-summary=zero,overflow,underflow,denormal\
+                      #  -Wimplicit-procedure -Wimplicit-interface\
+			-Wuse-without-only -fbacktrace \
+		#	-Wuse-without-only -fbacktrace -Wrealloc-lhs -Wimplicit-interface\
                        # -fbacktrace -fdump-fortran-optimized -fdump-fortran-original
                         #-fsyntax-only -pedantic -pedantic-errors 
 			#-Wrealloc-lhs-all -Wfrontend-loop-interchange -Wtarget-lifetime \

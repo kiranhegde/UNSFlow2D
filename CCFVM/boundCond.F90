@@ -34,10 +34,11 @@ use inf
 implicit none
 integer(kind=i4)  :: ie
 real(kind=dp) :: qcl(nvar), qcr(nvar)
-real(kind=dp) :: dr, nx, ny, q2,un
+real(kind=dp) :: dr, nx, ny, q2,un,tx,ty,tn
 real(kind=dp) :: uinf, vinf, pinf, rinf, ainf
-real(kind=dp) :: Rp,Rm,rhof,uf,vf,pf,af,Unf,Sf,Ef
-real(kind=dp) :: q2inf,un_inf
+real(kind=dp) :: Rp,Rm,rhob,ub,vb,pb,ab,Sb
+real(kind=dp) :: q2inf,un_inf,Vnrm,Vtan,Vninf,Vtinf
+real(kind=dp) :: lam1,lam2,lam3,mach
 
 
 nx = fc(ie)%sx
@@ -45,49 +46,164 @@ ny = fc(ie)%sy
 dr =  dsqrt(nx*nx + ny*ny)
 nx = nx/dr
 ny = ny/dr
+tx=-ny
+ty= nx
 
+rinf  = r_inf
 uinf  = u_inf
 vinf  = v_inf
-q2inf = uinf**2 + vinf**2
 pinf  = p_inf
-rinf  = r_inf
-ainf  = a_inf
+q2inf = uinf**2 + vinf**2
+!ainf  = a_inf
+ainf= dsqrt(GAMMA*pinf/rinf)
 un_inf = uinf*nx + vinf*ny
 
 rho=qcl(1)
 u  =qcl(2)
 v  =qcl(3)
 p  =qcl(4)
-
 q2= u*u + v*v
 a= dsqrt(GAMMA*p/rho)
-
 un = u*nx + v*ny
+tn = u*tx + v*ty
 
-Rp=un+2.d0*a/gamma1
-Rm=un_inf-2.d0*ainf/gamma1
+rhob=rinf
+ub=uinf
+vb=vinf
+pb=pinf
+
+lam1=un+a
+lam2=un-a
+lam3=un
+mach=un/a
 
 
-Unf=0.5d0*(Rp+Rm)
-af=0.25d0*(Rp-Rm)*gamma1
-
-if(Unf>0.d0) then
-  uf=u+nx*(Unf-un)
-  vf=v+ny*(Unf-un)
-  Sf=p/(rho**gamma)
-else
-  uf=uinf+nx*(Unf-un_inf)
-  vf=vinf+ny*(Unf-un_inf)
-  Sf=pinf/(rinf**gamma)
+if(mach>=1.0_dp) then
+   Vnrm=un
+   Vtan=tn 
+   ab=a
+   rhob=rho
+   ub=Vnrm*nx+Vtan*tx 
+   vb=Vnrm*ny+Vtan*ty 
+   pb=p
+elseif(0.0_dp<=mach.and.mach<1.0_dp) then
+   Vninf=uinf*nx+vinf*ny
+   Vtinf=uinf*tx+vinf*ty
+   Rp=un+2.0_dp*a/gamma1
+   Rm=Vninf-2.0_dp*ainf/gamma1
+   Sb=p/(rho**gamma)
+   Vnrm=0.5_dp*(Rp+Rm)
+   Vtan=tn 
+   ub=Vnrm*nx+Vtan*tx 
+   vb=Vnrm*ny+Vtan*ty 
+   ab=0.25_dp*(Rp-Rm)*gamma1
+   rhob=(ab*ab/gamma/Sb)**(1.0_dp/gamma1)
+   pb=rhob*ab*ab/gamma
+elseif(-1.0_dp<mach.and.mach<0.0_dp) then
+   Vninf=uinf*nx+vinf*ny
+   Vtinf=uinf*tx+vinf*ty
+   Rp=un+2.0_dp*a/gamma1
+   Rm=Vninf-2.0_dp*ainf/gamma1
+   Sb=pinf/(rinf**gamma)
+   Vnrm=0.5_dp*(Rp+Rm)
+   Vtan=Vtinf 
+   ub=Vnrm*nx+Vtan*tx 
+   vb=Vnrm*ny+Vtan*ty 
+   ab=0.25_dp*(Rp-Rm)*gamma1
+   rhob=(ab*ab/gamma/Sb)**(1.0_dp/gamma1)
+   pb=rhob*ab*ab/gamma
+elseif(-1.0_dp<=mach) then
+   rhob=rinf
+   ub=uinf   
+   vb=vinf   
+   pb=pinf
 endif
 
-rhof=(af*af/gamma/Sf)**(1.d0/gamma1)
-pf=rhof*af*af/gamma
-ef=pf/gamma1 + 0.5d0*rhof*(uf*uf+vf*vf)
-
-qcr(1)=rhof
-qcr(2)=uf
-qcr(3)=vf
-qcr(4)=pf
+qcr(1)=rhob
+qcr(2)=ub
+qcr(3)=vb
+qcr(4)=pb
 
 end
+
+!subroutine farfield_flux(ie,qcl,qcr)
+!use grid
+!use pri
+!use inf
+!implicit none
+!integer(kind=i4)  :: ie
+!real(kind=dp) :: qcl(nvar), qcr(nvar)
+!real(kind=dp) :: dr, nx, ny, q2,un
+!real(kind=dp) :: uinf, vinf, pinf, rinf, ainf
+!real(kind=dp) :: Rp,Rm,rhof,uf,vf,pf,af,Unf,Sf,Ef
+!real(kind=dp) :: q2inf,un_inf
+!real(kind=dp) :: lamda1,lamda3
+!
+!
+!nx = fc(ie)%sx
+!ny = fc(ie)%sy
+!dr =  dsqrt(nx*nx + ny*ny)
+!nx = nx/dr
+!ny = ny/dr
+!
+!rinf  = r_inf
+!uinf  = u_inf
+!vinf  = v_inf
+!pinf  = p_inf
+!q2inf = uinf**2 + vinf**2
+!ainf  = a_inf
+!un_inf = uinf*nx + vinf*ny
+!
+!rho=qcl(1)
+!u  =qcl(2)
+!v  =qcl(3)
+!p  =qcl(4)
+!q2= u*u + v*v
+!a= dsqrt(GAMMA*p/rho)
+!un = u*nx + v*ny
+!
+!lamda1=un-a
+!lamda3=un+a
+!if(lamda1<0.0_dp) then
+!   Rm=un_inf-2.0_dp*ainf/gamma1
+!else   
+!   Rm=un-2.0_dp*a/gamma1
+!endif
+!
+!if(lamda3<0.0_dp) then
+!  Rp=un_inf+2.0_dp*ainf/gamma1
+!else   
+!  Rp=un+2.0_dp*a/gamma1
+!endif
+!
+!!Rp=un+2.0_dp*a/gamma1
+!!Rm=un_inf-2.0_dp*ainf/gamma1
+!
+!Unf=0.5_dp*(Rp+Rm)
+!af=0.25_dp*(Rp-Rm)*gamma1
+!
+!if(Unf<=0.0_dp) then
+!  !uf=u+nx*(Unf-un)
+!  !vf=v+ny*(Unf-un)
+!  uf=u-nx*un
+!  vf=v-ny*un
+!  Sf=p/(rho**gamma)
+!else
+!  !uf=uinf+nx*(Unf-un_inf)
+!  !vf=vinf+ny*(Unf-un_inf)
+!  uf=uinf-nx*un_inf
+!  vf=vinf-ny*un_inf
+!  Sf=pinf/(rinf**gamma)
+!endif
+!
+!rhof=(af*af/gamma/Sf)**(1.0_dp/gamma1)
+!pf=rhof*af*af/gamma
+!ef=pf/gamma1 + 0.5_dp*rhof*(uf*uf+vf*vf)
+!
+!qcr(1)=rhof
+!qcr(2)=uf
+!qcr(3)=vf
+!qcr(4)=pf
+!
+!end
+

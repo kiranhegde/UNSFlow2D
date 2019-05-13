@@ -3,7 +3,13 @@
 !-----------------------------------------------------------------------------
 subroutine read_input
 use data_type,only:i4
-use param
+use param,only:  istart,flow_type,m_inf,aoa_deg,&  
+               & Rey,cfl_max,timemode,grad_type, & 
+               & iterlast,maxiter,minres,saveinterval,&
+               & scrinterval,niso,flux_type,ILIMIT, &
+               & vortex, xref, yref,gridfile,scratch,inpfile,restart
+use commons,only:yes,no
+
 implicit none
 integer(kind=i4) :: inp, iargc, n, inpstatus
 character sdummy*32

@@ -657,6 +657,23 @@ do i=1,noc
    !exit
 enddo
 
+open(3,file='BC-Vec_plot.dat')
+open(4,file='BC_plot.dat')
+do i=startBC,endBC
+   p1=fc(i)%pt(1)
+   p2=fc(i)%pt(2)
+   x1 = pt(p1)%x ; y1 = pt(p1)%y
+   x2 = pt(p2)%x ; y2 = pt(p2)%y
+   write(4,*)x1,y1
+   write(4,*)x2,y2
+   write(4,*)
+   x1 = (x2+x1)/2.0d0 ; y1= (y2+y1)/2.0d0
+   write(3,100)x1,y1,fc(i)%sx,fc(i)%sy
+enddo
+close(3)
+close(4)
+
+
 open(3,file='Vec_plot.dat')
 open(4,file='Vec_InCell.dat')
 open(5,file='Vec_OutCell.dat')

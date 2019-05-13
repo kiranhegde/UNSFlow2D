@@ -112,7 +112,11 @@ implicit none
 integer(kind=i4) :: i,ie,in,out
 real(kind=dp)    :: qcl(nvar), qcr(nvar)
 real(kind=dp)    :: distl(ndim),distr(ndim) 
+real(kind=dp)    :: zhi,beta,alfa  
 
+!zhi=0.0_dp       ! 
+!zhi=-1.0_dp      ! 2nd order fully upwind
+zhi=1.0_dp/3.0_dp ! 3rd order fully upwind
 
 qcl(:)=0.d0
 qcr(:)=0.d0
@@ -122,11 +126,24 @@ distr=0.0_dp
 distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
 distr(:)=fc(ie)%cen(:)-cell(out)%cen(:)
 
+!do i=1,nvar
+   !Left state
+!   qcl(i)=cell(in)%qp(i)+sum(cell(in)%grad(:,i)*distl(:))
+   !Right state
+!   qcr(i)=cell(out)%qp(i)+sum(cell(out)%grad(:,i)*distr(:))
+!enddo
+
+!return
+
 do i=1,nvar
    !Left state
-   qcl(i)=cell(in)%qp(i)+sum(cell(in)%grad(:,i)*distl(:))
+   alfa=sum(cell(in)%grad(:,i)*distl(:))
+   beta=0.5_dp*(cell(out)%qp(i)-cell(in)%qp(i))
+   qcl(i)=cell(in)%qp(i)+zhi*beta+(1.0_dp-zhi)*alfa
    !Right state
-   qcr(i)=cell(out)%qp(i)+sum(cell(out)%grad(:,i)*distr(:))
+   alfa=sum(cell(out)%grad(:,i)*distr(:))
+   beta=0.5_dp*(cell(in)%qp(i)-cell(out)%qp(i))
+   qcr(i)=cell(out)%qp(i)+zhi*beta+(1.0_dp-zhi)*alfa
 enddo
 
 end subroutine recon 
