@@ -28,13 +28,15 @@ do i=startBC,endBC
 enddo
 ! Mesh connectivity generation
 
+call cell_face_norm_c2f_dist
+
 call cell_2_cell
 
 call renumber
 
 call cell_2_face
 
-call cell_face_norm_c2f_dist
+!call cell_face_norm_c2f_dist
 
 call vertex_2_cell
 
@@ -53,7 +55,147 @@ call write_2_file
 !========================================================
 contains
 !========================================================
+! 
+subroutine cell_face_norm_c2f_dist
+use param
+use grid
+implicit none
 
+integer(kind=i4) :: i
+integer(kind=i4) :: p1,p2,in,out
+real(kind=dp)    :: x1,y1,x2,y2
+real(kind=dp)    :: xc,yc,dx,dy
+real(kind=dp)    :: check,dotprod
+
+! face normal components & face midpoint
+do i=startFC,endFC
+   p1=fc(i)%pt(1)
+   p2=fc(i)%pt(2)
+!   in=fc(i)%in
+!   out=fc(i)%out
+!   xc=cell(out)%cen(1)
+!   yc=cell(out)%cen(2)
+!   x1 = pt(p1)%x ; y1 = pt(p1)%y
+!   x2 = pt(p2)%x ; y2 = pt(p2)%y
+!   dx = x2-x1 ; dy = y2-y1
+!   !fc(i)%sx = dy
+!   !fc(i)%sy = -dx
+!   check=dotprod(p1,p2,xc,yc)
+!   if(check<0.0_dp) then
+!      print*,'Domain face normal in->out:',i,in,out 
+!      fc(i)%in=out
+!      fc(i)%out=in
+!      !fc(i)%pt(1)=p2
+!      !fc(i)%pt(2)=p1
+!      !x1 = pt(p2)%x ; y1 = pt(p2)%y
+!      !x2 = pt(p1)%x ; y2 = pt(p1)%y
+!      !dx = x2-x1 ; dy = y2-y1
+!      !fc(i)%sx = dy
+!      !fc(i)%sy = -dx
+!      stop
+!   endif 
+
+   
+   fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
+   fc(i)%cen(2)=0.5_dp*(pt(p1)%y+pt(p2)%y)
+enddo
+
+! making boundary face normal outward
+do i=startBC,endBC
+
+   p1=fc(i)%pt(1)
+   p2=fc(i)%pt(2)
+   fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
+   in=fc(i)%in
+   out=fc(i)%out
+ 
+   if(out>=0.or.in<=0)  then 
+      print*,in,out 
+      Stop 'in or out=0' 
+   endif
+
+   if(fc(i)%bc==2001) then
+      xc=cell(in)%cen(1)
+      yc=cell(in)%cen(2)
+      p1=fc(i)%pt(1)
+      p2=fc(i)%pt(2)
+      check=dotprod(p1,p2,xc,yc)
+      if(check>0.0_dp) then
+      print*,i,'in->out',2001 
+        fc(i)%pt(1)=p2
+        fc(i)%pt(2)=p1
+        x1 = pt(p2)%x ; y1 = pt(p2)%y
+        x2 = pt(p1)%x ; y2 = pt(p1)%y
+        dx = x2-x1 ; dy = y2-y1
+        fc(i)%sx = dy
+        fc(i)%sy = -dx
+        !stop
+      endif  
+   endif  
+
+   if(fc(i)%bc==1001) then
+      xc=cell(in)%cen(1)
+      yc=cell(in)%cen(2)
+      p1=fc(i)%pt(1)
+      p2=fc(i)%pt(2)
+      check=dotprod(p1,p2,xc,yc)
+      if(check>0.0_dp) then
+      print*,i,'in->out',1001 
+        fc(i)%pt(1)=p2
+        fc(i)%pt(2)=p1
+        x1 = pt(p2)%x ; y1 = pt(p2)%y
+        x2 = pt(p1)%x ; y2 = pt(p1)%y
+        dx = x2-x1 ; dy = y2-y1
+        fc(i)%sx = dy
+        fc(i)%sy = -dx
+        !stop
+      endif  
+   endif  
+
+enddo
+
+!stop
+
+return
+
+
+! cell center to face distance
+!do i=1,nof
+   !in=fc(i)%in
+   !out=fc(i)%out
+   
+!   p1=fc(i)%pt(1)
+!   p2=fc(i)%pt(2)
+   
+!   fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
+!   fc(i)%cen(2)=0.5_dp*(pt(p1)%y+pt(p2)%y)
+   
+!   ! Left cell distance 
+!   if(in/=0) then
+!   xc1=cell(in)%cen(1)
+!   yc1=cell(in)%cen(2)
+!   fc(i)%ldx = xfc-xc1 
+!   fc(i)%ldy = yfc-yc1 
+!   endif
+!
+!   ! Right cell distance 
+!   if(out/=0) then
+!   xc2=cell(out)%cen(1)
+!   yc2=cell(out)%cen(2)
+!   fc(i)%rdx = xfc-xc2 
+!   fc(i)%rdy = yfc-yc2 
+!   endif
+
+!enddo
+
+!do i=1,noc
+!   print*,i,(cell(i)%c2c(j), j=1,cell(i)%nc2c) 
+!enddo
+
+!print*, 'Max. cell nbr=',maxval(cell(:)%nc2c),'at node',maxloc(cell(:)%nc2c)
+!print*, 'Min. cell nbr=',minval(cell(:)%nc2c),'at node',minloc(cell(:)%nc2c)
+end subroutine cell_face_norm_c2f_dist
+!===========================================================
 subroutine cell_2_cell
 use param
 use grid
@@ -157,89 +299,115 @@ implicit none
 integer(kind=i4) :: i
 integer(kind=i4) :: p1,p2
 integer(kind=i4) :: in,out
-real(kind=dp)    :: x1,y1,x2,y2
-real(kind=dp)    :: dx,dy
+integer(kind=i4),parameter :: nn=3
+!real(kind=dp)    :: x1,y1,x2,y2,xy(ndim,nn)
+!real(kind=dp)    :: dx,dy,area
+real(kind=dp)    :: xy(ndim,nn)
+real(kind=dp)    :: area
 
-
-fc(:)%cov=0.d0
+fc(:)%cov=0.0_dp
+cell(:)%cov=0.0_dp
 do i=startFC,endFC
+   area=0.0_dp
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    in=fc(i)%in
    out=fc(i)%out
-   
-   x1 = pt(p1)%x    ; y1 = pt(p1)%y
-   x2 = cell(out)%cen(1) ; y2 = cell(out)%cen(2)
-   dx = 0.5d0*(x2+x1) ; dy = y2-y1
-   fc(i)%cov=fc(i)%cov+dx*dy
 
-   x1 = cell(out)%cen(1) ; y1 = cell(out)%cen(2)
-   x2 = pt(p2)%x    ; y2 = pt(p2)%y
-   dx = 0.5d0*(x2+x1) ; dy = y2-y1
-   fc(i)%cov=fc(i)%cov+dx*dy
+   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
+   xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
+   call triarea(xy,area,nn)
+   fc(i)%cov=fc(i)%cov+area
 
-   x1 = pt(p2)%x    ; y1 = pt(p2)%y
-   x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
-   dx = 0.5d0*(x2+x1) ; dy = y2-y1
-   fc(i)%cov=fc(i)%cov+dx*dy
+   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   xy(1,2)=cell(out)%cen(1) ; xy(2,2)=cell(out)%cen(2)
+   xy(1,3)=pt(p2)%x         ; xy(2,3)=pt(p2)%y
+   call triarea(xy,area,nn)
+   fc(i)%cov=fc(i)%cov+area
+ 
+!   x1 = pt(p1)%x    ; y1 = pt(p1)%y
+!   x2 = cell(out)%cen(1) ; y2 = cell(out)%cen(2)
+!   dx = 0.5_dp*(x2+x1) ; dy = y2-y1
+!   fc(i)%cov=fc(i)%cov+dx*dy
+!
+!   x1 = cell(out)%cen(1) ; y1 = cell(out)%cen(2)
+!   x2 = pt(p2)%x    ; y2 = pt(p2)%y
+!   dx = 0.5_dp*(x2+x1) ; dy = y2-y1
+!   fc(i)%cov=fc(i)%cov+dx*dy
+!
+!   x1 = pt(p2)%x    ; y1 = pt(p2)%y
+!   x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
+!   dx = 0.5_dp*(x2+x1) ; dy = y2-y1
+!   fc(i)%cov=fc(i)%cov+dx*dy
+!
+!   x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
+!   x2 = pt(p1)%x    ; y2 = pt(p1)%y
+!   dx = 0.5_dp*(x2+x1) ; dy = y2-y1
+!   fc(i)%cov=fc(i)%cov+dx*dy
 
-   x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
-   x2 = pt(p1)%x    ; y2 = pt(p1)%y
-   dx = 0.5d0*(x2+x1) ; dy = y2-y1
-   fc(i)%cov=fc(i)%cov+dx*dy
-
-   if(fc(i)%cov <= 0.d0) then  
-      print*,i,'0 ? -ve face co-volume'
+   if(fc(i)%cov <= 0.0_dp) then  
+      print*,i,'0 ? -ve face co-volume @ inner domain'
       write(75,*)i,in,out
       stop
    endif
 
+   cell(in)%cov=cell(in)%cov+fc(i)%cov
+   cell(out)%cov=cell(out)%cov+fc(i)%cov
 enddo
 
 do i=startBC,endBC
+   area=0.0_dp
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    in=fc(i)%in
-   x1 = pt(p1)%x ; y1 = pt(p1)%y
-   x2 = pt(p2)%x ; y2 = pt(p2)%y
-   dx = 0.5d0*(x2+x1) ; dy = y2-y1
-   fc(i)%cov=fc(i)%cov+dx*dy
+   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
+   xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
+   call triarea(xy,area,nn)
+   fc(i)%cov=area
 
-   x1 = pt(p2)%x    ; y1 = pt(p2)%y
-   x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
-   dx = 0.5d0*(x2+x1) ; dy = y2-y1
-   fc(i)%cov=fc(i)%cov+dx*dy
-
-   x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
-   x2 = pt(p1)%x    ; y2 = pt(p1)%y
-   dx = 0.5d0*(x2+x1) ; dy = y2-y1
-   fc(i)%cov=fc(i)%cov+dx*dy
-   if(fc(i)%cov <= 0.d0) then  
-      print*,i,'? 1 -ve face co-volume'
+!   x1 = pt(p1)%x ; y1 = pt(p1)%y
+!   x2 = pt(p2)%x ; y2 = pt(p2)%y
+!   dx = 0.5_dp*(x2+x1) ; dy = y2-y1
+!   fc(i)%cov=fc(i)%cov+dx*dy
+!
+!   x1 = pt(p2)%x    ; y1 = pt(p2)%y
+!   x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
+!   dx = 0.5_dp*(x2+x1) ; dy = y2-y1
+!   fc(i)%cov=fc(i)%cov+dx*dy
+!
+!   x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
+!   x2 = pt(p1)%x    ; y2 = pt(p1)%y
+!   dx = 0.5_dp*(x2+x1) ; dy = y2-y1
+!   fc(i)%cov=fc(i)%cov+dx*dy
+   if(fc(i)%cov <= 0.0_dp) then  
+      print*,i,'? 1 -ve face co-volume @ BC'
       write(75,*)i,in,out
       stop
    endif
+   cell(in)%cov=cell(in)%cov+fc(i)%cov
 enddo
+
+!do i=1,noc
+!   cell(i)%cov=0.0_dp
+!enddo
+!
+!do i=1,nof
+!   in=fc(i)%in
+!   out=fc(i)%out
+!   if(fc(i)%cov <= 0.0_dp) then  
+!      print*,i,'-ve face co-volume @ BC or inner domain'
+!      write(75,*)i,in,out
+!      stop
+!   endif
+!
+!   if(in>0) cell(in)%cov=cell(in)%cov+fc(i)%cov
+!   if(out>0) cell(out)%cov=cell(out)%cov+fc(i)%cov
+!enddo
 
 do i=1,noc
-   cell(i)%cov=0.d0
-enddo
-
-do i=1,nof
-   in=fc(i)%in
-   out=fc(i)%out
-   if(fc(i)%cov <= 0.d0) then  
-      print*,i,'-ve face co-volume'
-      write(75,*)i,in,out
-      stop
-   endif
-
-   if(in>0) cell(in)%cov=cell(in)%cov+fc(i)%cov
-   if(out>0) cell(out)%cov=cell(out)%cov+fc(i)%cov
-enddo
-
-do i=1,noc
-   if(cell(i)%cov<=0.d0) then
+   if(cell(i)%cov<=0.0_dp) then
       print*,i,'-ve cell co-volume'
       write(75,*)i,in,out
       stop
@@ -247,124 +415,25 @@ do i=1,noc
 enddo
 
 end subroutine face_co_volume
-!===========================================================
-! 
-subroutine cell_face_norm_c2f_dist
-use param
-use grid
+
+subroutine triarea(xy,area,nn)
 implicit none
+integer(kind=i4) :: i,nn,ip1
+real(kind=dp)    :: xy(ndim,nn)
+real(kind=dp)    :: area,dx,dy
 
-integer(kind=i4) :: i
-integer(kind=i4) :: p1,p2,in,out
-real(kind=dp)    :: x1,y1,x2,y2
-real(kind=dp)    :: xc,yc,dx,dy
-real(kind=dp)    :: check,dotprod
-
-! face normal components & face midpoint
-do i=startFC,endFC
-   p1=fc(i)%pt(1)
-   p2=fc(i)%pt(2)
-   x1 = pt(p1)%x ; y1 = pt(p1)%y
-   x2 = pt(p2)%x ; y2 = pt(p2)%y
-   dx = x2-x1 ; dy = y2-y1
-   fc(i)%sx = dy
-   fc(i)%sy = -dx
-   
-   fc(i)%cen(1)=0.5d0*(pt(p1)%x+pt(p2)%x)
-   fc(i)%cen(2)=0.5d0*(pt(p1)%y+pt(p2)%y)
+! area of a polygon
+area=0.0_dp
+do i=1,nn
+   ip1=i+1
+   if(i==nn) ip1=1
+   dx=0.5_dp*(xy(1,ip1)+xy(1,i))
+   dy=        xy(2,ip1)-xy(2,i)
+   area=area+dx*dy
 enddo
+end subroutine triarea
 
 
-! making boundary face normal outward
-do i=startBC,endBC
-
-   p1=fc(i)%pt(1)
-   p2=fc(i)%pt(2)
-   fc(i)%cen(1)=0.5d0*(pt(p1)%x+pt(p2)%x)
-   in=fc(i)%in
-   out=fc(i)%out
- 
-   if(out>=0.or.in<=0)  then 
-      print*,in,out 
-      Stop 'in or out=0' 
-   endif
-
-   if(fc(i)%bc==2001) then
-      xc=cell(in)%cen(1)
-      yc=cell(in)%cen(2)
-      p1=fc(i)%pt(1)
-      p2=fc(i)%pt(2)
-      check=dotprod(p1,p2,xc,yc)
-      if(check>0.0d0) then
-        fc(i)%pt(1)=p2
-        fc(i)%pt(2)=p1
-        x1 = pt(p2)%x ; y1 = pt(p2)%y
-        x2 = pt(p1)%x ; y2 = pt(p1)%y
-        dx = x2-x1 ; dy = y2-y1
-        fc(i)%sx = dy
-        fc(i)%sy = -dx
-      endif  
-   endif  
-
-   if(fc(i)%bc==1001) then
-      xc=cell(in)%cen(1)
-      yc=cell(in)%cen(2)
-      p1=fc(i)%pt(1)
-      p2=fc(i)%pt(2)
-      check=dotprod(p1,p2,xc,yc)
-      if(check>0.0d0) then
-        fc(i)%pt(1)=p2
-        fc(i)%pt(2)=p1
-        x1 = pt(p2)%x ; y1 = pt(p2)%y
-        x2 = pt(p1)%x ; y2 = pt(p1)%y
-        dx = x2-x1 ; dy = y2-y1
-        fc(i)%sx = dy
-        fc(i)%sy = -dx
-      endif  
-   endif  
-
-enddo
-
-
-return
-
-
-! cell center to face distance
-!do i=1,nof
-   !in=fc(i)%in
-   !out=fc(i)%out
-   
-!   p1=fc(i)%pt(1)
-!   p2=fc(i)%pt(2)
-   
-!   fc(i)%cen(1)=0.5d0*(pt(p1)%x+pt(p2)%x)
-!   fc(i)%cen(2)=0.5d0*(pt(p1)%y+pt(p2)%y)
-   
-!   ! Left cell distance 
-!   if(in/=0) then
-!   xc1=cell(in)%cen(1)
-!   yc1=cell(in)%cen(2)
-!   fc(i)%ldx = xfc-xc1 
-!   fc(i)%ldy = yfc-yc1 
-!   endif
-!
-!   ! Right cell distance 
-!   if(out/=0) then
-!   xc2=cell(out)%cen(1)
-!   yc2=cell(out)%cen(2)
-!   fc(i)%rdx = xfc-xc2 
-!   fc(i)%rdy = yfc-yc2 
-!   endif
-
-!enddo
-
-!do i=1,noc
-!   print*,i,(cell(i)%c2c(j), j=1,cell(i)%nc2c) 
-!enddo
-
-!print*, 'Max. cell nbr=',maxval(cell(:)%nc2c),'at node',maxloc(cell(:)%nc2c)
-!print*, 'Min. cell nbr=',minval(cell(:)%nc2c),'at node',minloc(cell(:)%nc2c)
-end subroutine cell_face_norm_c2f_dist
 
 !==============================================================================
 subroutine vertex_2_cell
@@ -445,8 +514,8 @@ do i=1,nop
       yc=cell(c)%cen(2) 
       dx=xc-pt(i)%x
       dy=yc-pt(i)%y
-      pt(i)%wt(j)=1.d0/dsqrt(dx*dx+dy*dy)
-      if(pt(i)%wt(j)<0.d0) then
+      pt(i)%wt(j)=1._dp/dsqrt(dx*dx+dy*dy)
+      if(pt(i)%wt(j)<0.0_dp) then
         print*,"'Distance negative..."
         stop
       endif    
@@ -475,9 +544,9 @@ print*,"==> Cell face length  "
 
 ! average cell face length
 !do i=1,noc
-!   cell(i)%ds=0.d0
-!   cell(i)%dx=0.d0
-!   cell(i)%dy=0.d0
+!   cell(i)%ds=0.0_dp
+!   cell(i)%dx=0.0_dp
+!   cell(i)%dy=0.0_dp
 !   do j=1,cell(i)%nc2f
 !      c=cell(i)%c2f(j) 
 !      dx=dabs(fc(c)%sx)
@@ -488,22 +557,22 @@ print*,"==> Cell face length  "
 !      cell(i)%dy=cell(i)%dy+dy
 !   enddo 
 !   cell(i)%ds=cell(i)%ds/cell(i)%nc2f
-!   cell(i)%dx=0.5d0*cell(i)%dx
-!   cell(i)%dy=0.5d0*cell(i)%dy
-!   if(cell(i)%dx<=0.d0.or.cell(i)%dy<=0.d0) then 
+!   cell(i)%dx=0.5_dp*cell(i)%dx
+!   cell(i)%dy=0.5_dp*cell(i)%dy
+!   if(cell(i)%dx<=0.0_dp.or.cell(i)%dy<=0.0_dp) then 
 !     print*, 'Time step length scale  zero'
 !     stop 
 !   endif
 !enddo
 
-cell(:)%ds=0.d0
-cell(:)%dx=0.d0
-cell(:)%dy=0.d0
+cell(:)%ds=0.0_dp
+cell(:)%dx=0.0_dp
+cell(:)%dy=0.0_dp
 do i=1,nof
    in=fc(i)%in
    out=fc(i)%out
-   sx=0.5d0*fc(i)%sx
-   sy=0.5d0*fc(i)%sy
+   sx=0.5_dp*fc(i)%sx
+   sy=0.5_dp*fc(i)%sy
    ds=dsqrt(sx*sx+sy*sy)
    if(in>0) then 
      cell(in)%ds=cell(in)%ds+ds
@@ -521,9 +590,9 @@ enddo
 
 !do i=1,noc
 !   !cell(i)%ds=cell(i)%ds/cell(i)%nc2f
-!   cell(i)%ds=0.5d0*cell(i)%ds
-!   cell(i)%dx=0.5d0*cell(i)%dx
-!   cell(i)%dy=0.5d0*cell(i)%dy
+!   cell(i)%ds=0.5_dp*cell(i)%ds
+!   cell(i)%dx=0.5_dp*cell(i)%dx
+!   cell(i)%dy=0.5_dp*cell(i)%dy
    !cell(i)%dx=cell(i)%dx/cell(i)%nc2f
    !cell(i)%dy=cell(i)%dy/cell(i)%nc2f
 !enddo
@@ -566,7 +635,7 @@ do i=1,noc
       check=dotprod(p1,p2,xc,yc)
       !print*,'check',check
 
-      if(check<0.0d0) then
+      if(check<0.0_dp) then
          cell(i)%nc2v=cell(i)%nc2v+1
          call alloc_int_ptr(cell(i)%c2v,cell(i)%nc2v)      
          cell(i)%c2v(cell(i)%nc2v)=p1      
@@ -595,7 +664,7 @@ do i=1,noc
             check=dotprod(m1,m2,xc,yc)
             !print*,i,k,j,c,check
             !print*,p1,p2,m1,m2 
-            if(check<0.0d0) then
+            if(check<0.0_dp) then
                cell(i)%nc2v=cell(i)%nc2v+1
                call alloc_int_ptr(cell(i)%c2v,cell(i)%nc2v)      
                cell(i)%c2v(cell(i)%nc2v)=m2      
@@ -632,7 +701,7 @@ use param
 use grid
 implicit none
 
-integer(kind=i4) :: i,j
+integer(kind=i4) :: i
 integer(kind=i4) :: p1,p2
 real(kind=dp)    :: x1,y1,x2,y2
 
@@ -640,22 +709,6 @@ x1=0.0_dp
 x2=0.0_dp
 y1=0.0_dp
 y2=0.0_dp
-
-do i=1,noc
-!   print*,i
-   do j=1,cell(i)%nc2v-1
-      p1=cell(i)%c2v(j)
-      p2=cell(i)%c2v(j+1)
-      x1 = pt(p1)%x ; y1 = pt(p1)%y
-      x2 = pt(p2)%x ; y2 = pt(p2)%y
-      !write(25,101)x1,y1,x2-x1,y2-y1
-      !write(25,*)pt(p1)%x,pt(p1)%y
-      !write(25,*)pt(p2)%x,pt(p2)%y
-      !write(25,*)
-   enddo
-   !print*,i,(cell(i)%c2v(j), j=1,cell(i)%nc2v) 
-   !exit
-enddo
 
 open(3,file='BC-Vec_plot.dat')
 open(4,file='BC_plot.dat')
@@ -667,56 +720,39 @@ do i=startBC,endBC
    write(4,*)x1,y1
    write(4,*)x2,y2
    write(4,*)
-   x1 = (x2+x1)/2.0d0 ; y1= (y2+y1)/2.0d0
+   x1 = (x2+x1)/2.0_dp ; y1= (y2+y1)/2.0_dp
    write(3,100)x1,y1,fc(i)%sx,fc(i)%sy
 enddo
 close(3)
 close(4)
 
 
-open(3,file='Vec_plot.dat')
-open(4,file='Vec_InCell.dat')
-open(5,file='Vec_OutCell.dat')
+open(3,file='Mesh_plot.dat')
+open(4,file='MeshVec_plot.dat')
 do i=1,nof
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    x1 = pt(p1)%x ; y1 = pt(p1)%y
    x2 = pt(p2)%x ; y2 = pt(p2)%y
-   write(3,100)x1,y1,x2-x1,y2-y1
-   !write(21,*)pt(p2)%x,pt(p2)%y
-   !write(21,*)
-   x1 = (x2+x1)/2.0d0 ; y1= (y2+y1)/2.0d0
-   !in=fc(i)%in
-   !out=fc(i)%out
-   !if(fc(i)%bc==1001.and.in>0) write(4,100)x1,y1,cell(in)%cen(1)-x1,cell(in)%cen(2)-y1
-   if(fc(i)%bc==1001) write(4,100)x1,y1,fc(i)%sx,fc(i)%sy
-   !if(fc(i)%bc==1001.and.out>0) write(4,100)x1,y1,cell(out)%cen(1)-x1,cell(out)%cen(2)-y1
-   if(fc(i)%bc==2001) write(5,100)x1,y1,fc(i)%sx,fc(i)%sy
+   write(3,101)x1,y1
+   write(3,101)x2,y2
+   write(3,*)
+   write(4,100)x1,y1,x2-x1,y2-y1
 enddo
-close(3)
 close(4)
-close(5)
+close(3)
 
-do i=1,nof
-   if(fc(i)%bc==1001) then
-   p1=fc(i)%pt(1)
-   p2=fc(i)%pt(2)
-   x1 = pt(p1)%x ; y1 = pt(p1)%y
-   x2 = pt(p2)%x ; y2 = pt(p2)%y
-   !write(36,*)x1,y1
-   !write(36,*)x2,y2
-   !write(36,*)
-   endif
-   if(fc(i)%bc==2001) then
-   p1=fc(i)%pt(1)
-   p2=fc(i)%pt(2)
-   x1 = pt(p1)%x ; y1 = pt(p1)%y
-   x2 = pt(p2)%x ; y2 = pt(p2)%y
-   !write(37,*)x1,y1
-   !write(37,*)x2,y2
-   !write(37,*)
-   endif
+
+!open(4,file='InCell.dat')
+open(5,file='OutCell.dat')
+do i=startFC,endFC
+   !in=fc(i)%in
+   out=fc(i)%out
+   !write(4,101)cell(in)%cen(1),cell(in)%cen(2)
+   write(5,101)cell(out)%cen(1),cell(out)%cen(2)
 enddo
+!close(4)
+close(5)
 
 open(3,file="Normals.dat")  
 do i=1,nof
@@ -724,12 +760,13 @@ do i=1,nof
    p2=fc(i)%pt(2)
    x1 = pt(p1)%x ; y1 = pt(p1)%y
    x2 = pt(p2)%x ; y2 = pt(p2)%y
-   x1 = (x2+x1)/2.0d0 ; y1= (y2+y1)/2.0d0
-   write(3,100)x1,y1,fc(i)%sx,fc(i)%sy
+   x1 = (x2+x1)/2.0_dp ; y1= (y2+y1)/2.0_dp
+   write(3,100)x1,y1,fc(i)%sx*0.5,fc(i)%sy*0.5
 enddo
 close(3)
 
 100 format(1x,4(f15.8,1x))
+101 format(1x,2(f15.8,1x))
 
 open(3,file='CC_plot.dat')
 do i=1,noc
@@ -1110,6 +1147,7 @@ real(kind=dp)    :: r11,r12,r22
 cell(:)%r11=0.0_dp
 cell(:)%r12=0.0_dp
 cell(:)%r22=0.0_dp
+ds=1.0_dp
 
 do i=startFC,endFC
    in  =fc(i)%in   
@@ -1120,7 +1158,7 @@ do i=startFC,endFC
    yo = cell(out)%cen(2)
    dx = xo-xi 
    dy = yo-yi 
-   ds=1.0_dp/dsqrt(dx*dx+dy*dy)
+   !ds=1.0_dp/dsqrt(dx*dx+dy*dy)
    cell(in )%r11=cell(in )%r11+ds*dx*dx
    cell(in )%r12=cell(in )%r12+ds*dx*dy
    cell(in )%r22=cell(in )%r22+ds*dy*dy
@@ -1140,7 +1178,7 @@ do i=startBC,endBC
    yo = fc(i)%cen(2)
    dx = xo-xi 
    dy = yo-yi 
-   ds=1.0_dp/dsqrt(dx*dx+dy*dy)
+   !ds=1.0_dp/dsqrt(dx*dx+dy*dy)
    cell(in)%r11=cell(in)%r11+ds*dx*dx
    cell(in)%r12=cell(in)%r12+ds*dx*dy
    cell(in)%r22=cell(in)%r22+ds*dy*dy 

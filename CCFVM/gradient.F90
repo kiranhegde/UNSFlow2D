@@ -11,7 +11,7 @@ real(kind=dp)    :: r11,r12,r22,alfa1,alfa2
 
 
 do i=1,noc
-   cell(i)%grad=0.d0
+   cell(i)%grad=0.0_dp
 enddo
 
 do i=startFC,endFC
@@ -97,7 +97,7 @@ end subroutine Gradient_LSQR
 !real(kind=dp)    :: qxy(2,nvar,noc)
 !
 !do i=1,noc
-!   cell(i)%grad(:,:)=0.d0
+!   cell(i)%grad(:,:)=0.0_dp
 !enddo
 !
 !qxy=0.0_dp
@@ -170,7 +170,7 @@ integer(kind=i4) :: i,j,in,out
 real(kind=dp) :: var,dx,dy
 
 do i=1,noc
-   cell(i)%grad(:,:)=0.d0
+   cell(i)%grad(:,:)=0.0_dp
 enddo
 
 do i=startFC,endFC
@@ -181,10 +181,10 @@ do i=startFC,endFC
 
    do j=1,nvar
       var=fc(i)%qp(j)
-      cell(in)%grad(1,j)=cell(in)%grad(1,j)-var*dx
-      cell(in)%grad(2,j)=cell(in)%grad(2,j)-var*dy
-      cell(out)%grad(1,j)=cell(out)%grad(1,j)+var*dx
-      cell(out)%grad(2,j)=cell(out)%grad(2,j)+var*dy
+      cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
+      cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
+      cell(out)%grad(1,j)=cell(out)%grad(1,j)-var*dx
+      cell(out)%grad(2,j)=cell(out)%grad(2,j)-var*dy
    enddo
 enddo
 
@@ -231,7 +231,7 @@ real(kind=dp) :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
 
 
 do i=1,noc
-   cell(i)%grad(:,:)=0.d0
+   cell(i)%grad(:,:)=0.0_dp
 enddo
 
 ! GG gradient using diamond path around an edge 
@@ -263,6 +263,7 @@ do i=startFC,endFC
    prim(:,3)=cell(in)%qp(:)
 
    ! gradient to the left  of cell
+   grad=0.0_dp
    call gradtrixy(prim,xy,grad,a2,nn)
    gradxy=gradxy+grad
    
@@ -317,7 +318,7 @@ subroutine gradtrixy(prim,xy,grad,area,nn)
 implicit none
 integer(kind=i4) :: i,nn,ip1
 real(kind=dp)    :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
-real(kind=dp)    :: area 
+real(kind=dp)    :: area,var(nvar) 
 
 ! area of a polygon
 area=0.0_dp
@@ -330,10 +331,24 @@ do i=1,nn
 enddo
 
 ! gradient in a triangular cell
-grad(1,:)= 0.5_dp*(prim(:,1)*(xy(2,2)-xy(2,3))+prim(:,2)*(xy(2,3)-xy(2,1)) & 
-          &      +prim(:,3)*(xy(2,1)-xy(2,2)))
-grad(2,:)=-0.5_dp*(prim(:,1)*(xy(1,2)-xy(1,3))+prim(:,2)*(xy(1,3)-xy(1,1)) &
-          &      +prim(:,3)*(xy(1,1)-xy(1,2)))
+!grad(1,:)= 0.5_dp*(prim(:,1)*(xy(2,2)-xy(2,3))+prim(:,2)*(xy(2,3)-xy(2,1)) & 
+!          &      +prim(:,3)*(xy(2,1)-xy(2,2)))
+!grad(2,:)=-0.5_dp*(prim(:,1)*(xy(1,2)-xy(1,3))+prim(:,2)*(xy(1,3)-xy(1,1)) &
+!          &      +prim(:,3)*(xy(1,1)-xy(1,2)))
+
+grad=0.0_dp
+do i=1,nn
+   ip1=i+1
+   if(i==nn) ip1=1
+   var(:)=0.5_dp*(prim(:,i)+prim(:,ip1)) 
+   dx=  xy(2,ip1)-xy(2,i) 
+   dy=-(xy(1,ip1)-xy(1,i))
+!   dx=  xy(1,ip1)-xy(1,i) 
+!   dy=  xy(2,ip1)-xy(2,i) 
+   grad(1,:)=grad(1,:)+var(:)*dx
+   grad(2,:)=grad(2,:)+var(:)*dy
+enddo
+
 
 end subroutine gradtrixy
 
@@ -357,7 +372,7 @@ end subroutine Gradient_GG_FC
 !
 !
 !do i=1,noc
-!   cell(i)%grad(:,:)=0.d0
+!   cell(i)%grad(:,:)=0.0_dp
 !enddo
 !
 !do i=startFC,endFC
@@ -430,7 +445,7 @@ end subroutine Gradient_GG_FC
 !do i=1,nn
 !   ip1=i+1
 !   if(i==nn) ip1=1
-!   var(:)=0.5d0*(prim(:,i)+prim(:,ip1)) 
+!   var(:)=0.5_dp*(prim(:,i)+prim(:,ip1)) 
 !   dx=  xy(2,ip1)-xy(2,i) 
 !   dy=-(xy(1,ip1)-xy(1,i))
 !   grad(1,:)=grad(1,:)+var(:)*dx

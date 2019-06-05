@@ -241,7 +241,7 @@ use pri
 use grid
 implicit none
 integer(kind=i4) :: i,j,c
-real(kind=dp) :: con(nvar)
+real(kind=dp) :: con(nvar),x1,y1
 
 !i=1
 !      print*
@@ -261,45 +261,36 @@ real(kind=dp) :: con(nvar)
 
 
 
-do i=1,nop
-   if(pt(i)%prim(1).le. 0.0d0 .or.pt(i)%prim(4).le. 0.0d0) then
+do i=1,noc
+   if(cell(i)%qp(1).le. 0.0_dp .or.cell(i)%qp(4).le. 0.0_dp) then
    print*
    print*,'Density/pressure is negative at point ', i
    open(3,file='PositivtyCheck.dat') 
-   print 200
-      do j=1,pt(i)%nv2c
-           c=pt(i)%v2c(j)  
-           write(3,*)cell(c)%cen(1),cell(c)%cen(2)            
-           con(:)=cell(c)%qc(:)
-           call con2prim(con)
-           print 201,c,u,v,p,cell(c)%la
+      do j=1,cell(i)%nc2v
+           c=cell(i)%c2v(j)
+           x1 = pt(c)%x ; y1 = pt(c)%y
+           write(3,*) x1,y1
       enddo 
-           write(3,*)
-      print*,'Density = ',pt(i)%prim(1)
-      print*,'u vel   = ',pt(i)%prim(2)
-      print*,'v vel   = ',pt(i)%prim(3)
-      print*,'Pressure= ',pt(i)%prim(4)
+      c=cell(i)%c2v(1)
+      x1 = pt(c)%x ; y1 = pt(c)%y
+      write(3,*) x1,y1
+      con(:)=cell(i)%qc(:)
+      call con2prim(con)
+      write(3,*)
+      print*,'Density = ',rho
+      print*,'u vel   = ',u
+      print*,'v vel   = ',v
+      print*,'Pressure= ',p
+      print*,'La = ',cell(i)%la
    print*
    close(3)
 
 
-!   DO k=1,noc
-!      do j=1,cell(k)%nc2v-1
-!         c=cell(k)%c2v(j)
-!         x2 = pt(c)%x ; y2 = pt(c)%y
-!         write(34,*)x2,y2
-!      END DO
-!         x1 = pt(cell(k)%c2v(1))%x ; y1 = pt(cell(k)%c2v(1))%y
-!         write(34,*)x1,y1
-!         write(34,*)
-!   END DO
-!   call tecplt_del 
-
    stop
    endif
 enddo
-200 format(1x,'#',20x,'u',15x,'v',15x,'p',14x,'Spec')
-201 format(1x,i8,4(f15.4,1x))
+!200 format(1x,'#',20x,'u',15x,'v',15x,'p',14x,'Spec')
+!201 format(1x,i8,4(f15.4,1x))
 end SUBROUTINE check_positivity
 
 
