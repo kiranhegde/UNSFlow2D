@@ -5,9 +5,11 @@ use pri
 use grid
 implicit none
 !!------------------------------------------------------------------------------
-integer(kind=i4):: ie,c1,c2
+integer(kind=i4):: ie,in,out
 real(kind=dp):: two_third,two
+real(kind=dp):: uvel,vvel 
 real(kind=dp):: Tauxx,Tauxy,tauyy,mu
+real(kind=dp):: flux(nvar)
 
 return
 
@@ -16,24 +18,32 @@ call sutherland
 
 two_third=2.0_dp/3.0_dp
 two=2.0_dp
+flux=0.0_dp
 
-do ie=1,nof
-   c1 = fc(ie)%in
-   c2 = fc(ie)%out
-   mu=0.5_dp*(cell(c1)%mul+cell(c2)%mul)
+do ie=startFC,endFC
+   in = fc(ie)%in
+   out= fc(ie)%out
+   mu=0.5_dp*(cell(in)%mul+cell(out)%mul)
+   uvel=fc(ie)%qp(2) 
+   vvel=fc(ie)%qp(3) 
 
    Tauxx=mu*two_third*(two*fc(ie)%grad(1,2)-fc(ie)%grad(2,3))/Rey
    Tauxy=mu*(fc(ie)%grad(2,2)+fc(ie)%grad(1,3))/Rey
    Tauyy=mu*two_third*(two*fc(ie)%grad(2,3)-fc(ie)%grad(1,2))/Rey
 
-   !qx=-mu*       fc(ie)%grad(1,2)
+   flux(1)=uvel*tauxx+vvel*tauxy  
+   flux(3)=uvel*tauxx+vvel*tauxy  
+   flux(4)=uvel*tauxy+vvel*tauyy  
 
-
-!   cell(c1)%res(i)=cell(c1)%res(i)+flux*area
-!   cell(c2)%res(i)=cell(c2)%res(i)-flux*area
-
-
+   !cell(in)%res(i)=cell(in)%res(i)+flux*area
+   !cell(out)%res(i)=cell(out)%res(i)-flux*area
 enddo
+
+
+!do i=startBC,endBC
+!   c1 = fc(i)%in
+!enddo
+
 
 contains
 !

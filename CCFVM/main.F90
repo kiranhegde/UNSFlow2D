@@ -16,9 +16,6 @@ elapsed=0.0_sp
 ts=0.0_sp
 te=0.0_sp
 
-
-
-
 !    Set some constants
 call math
 
@@ -30,7 +27,6 @@ call geometric
 
 ! Set initial condition
 call initialize
-
 
 !     Runge-Kutta time stepping
 if(timemode=="rk3".and.cfl_max > 1.0d0) then
@@ -50,16 +46,19 @@ endif
 !print*,'eps=',eps
 !stop
 
+
 iter = 0
 fres = 1.0d0
 call system('rm -f FLO.RES')
+
 print*,'Beginning of iterations ...'
 open(unit=99, file='FLO.RES')
+
 do while(iter .lt. MAXITER .and. fres .gt. MINRES)
 
    iter = iter + 1
-   cfl = 0.5d0*cfl_max*(1+dtanh(iter*7.d0/500.0 - 3.5))
-   !cfl = 0.5d0*cfl_max*(1+dtanh(iter*10.d0/1000.0 - 5.0))
+   call cfl_number(CFL)
+
    do i=1,noc
       call con2prim(cell(i)%qc(1:nvar))
       do j=1,nvar
@@ -73,11 +72,18 @@ do while(iter .lt. MAXITER .and. fres .gt. MINRES)
    call save_old
    
    !Gradient calculation using Green-Gauss
-   if(trim(grad_type)=='gg') call Gradient_GG
+   if(trim(grad_type)=='gg') then
+      call Gradient_GG
    !Gradient calculation using GG diamond path reconstruction
-   if(trim(grad_type)=='ggfc') call Gradient_GG_FC
+   elseif(trim(grad_type)=='ggfc') then 
+      call Gradient_GG_FC
    !Least square based Gradient calculation 
-   if(trim(grad_type)=='lsqr') call Gradient_LSQR
+   elseif(trim(grad_type)=='lsqr') then
+      call Gradient_LSQR
+   else
+      print*,' Unknown  Gradient calculation method:',grad_type
+      stop
+   endif
      
 !   if (iter==500) then
 !   allocate(ggqx(noc,nvar),ggqy(noc,nvar))
@@ -154,9 +160,30 @@ print *, 'Time: total=', totaltime, ' user=', elapsed(1), &
 !100 format(1x,i6,1x,4(f15.8,1x))
 
 
+contains
 
-stop
-end
+subroutine cfl_number(cfl_no)
+use param
+real(kind=dp)   :: cfl1,cfl2,exp_factor,s,cfl_no
+
+   ! Hyperblocally increasing the cfl to cfl_max
+   if(cfl_type=='tanh') then 
+       !cfl_no = 0.5_dp*cfl_max*(1.0_dp+dtanh(iter*7.0_dp/500.0_dp - 3.5_dp))
+       s = real(iter,dp)/real(CFL_ramp_steps-1,dp)
+       cfl_no = 0.5_dp*cfl_max*(1.0_dp+dtanh(s*7.0_dp - 3.5_dp))
+       !cfl_no = 0.5_dp*cfl_max*(1+dtanh(s*10.0_dp - 5.0_dp))
+   elseif(cfl_type=='ramp') then 
+   ! Ramping the cfl number to cfl_max in steps
+       CFL1 = 0.5_dp   ! Initial CFL 
+       CFL2 = CFL_max  ! Final CFL 
+       exp_factor = 0.5_dp
+       s = real(iter,dp)/real(CFL_ramp_steps-1,dp)
+       CFL_no = CFL1 + (CFL2-CFL1)*(1.0_dp-dexp(-s*exp_factor))/(1.0_dp-dexp(-exp_factor))
+   endif
+
+end subroutine cfl_number
+
+end  program
 
 
 subroutine screen

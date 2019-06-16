@@ -69,32 +69,32 @@ real(kind=dp)    :: check,dotprod
 
 ! face normal components & face midpoint
 do i=startFC,endFC
+   in=fc(i)%in
+   out=fc(i)%out
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
-!   in=fc(i)%in
-!   out=fc(i)%out
-!   xc=cell(out)%cen(1)
-!   yc=cell(out)%cen(2)
-!   x1 = pt(p1)%x ; y1 = pt(p1)%y
-!   x2 = pt(p2)%x ; y2 = pt(p2)%y
-!   dx = x2-x1 ; dy = y2-y1
-!   !fc(i)%sx = dy
-!   !fc(i)%sy = -dx
-!   check=dotprod(p1,p2,xc,yc)
-!   if(check<0.0_dp) then
-!      print*,'Domain face normal in->out:',i,in,out 
-!      fc(i)%in=out
-!      fc(i)%out=in
-!      !fc(i)%pt(1)=p2
-!      !fc(i)%pt(2)=p1
-!      !x1 = pt(p2)%x ; y1 = pt(p2)%y
-!      !x2 = pt(p1)%x ; y2 = pt(p1)%y
-!      !dx = x2-x1 ; dy = y2-y1
-!      !fc(i)%sx = dy
-!      !fc(i)%sy = -dx
-!      stop
-!   endif 
+   xc=cell(out)%cen(1)
+   yc=cell(out)%cen(2)
+   x1 = pt(p1)%x ; y1 = pt(p1)%y
+   x2 = pt(p2)%x ; y2 = pt(p2)%y
+   dx = x2-x1 ; dy = y2-y1
+   fc(i)%sx = dy
+   fc(i)%sy = -dx
+   check=dotprod(p1,p2,xc,yc)
 
+   if(check<0.0_dp) then
+!     print*,'Domain face normal in->out:',i,in,out 
+      print*,in,out,check,fc(i)%bc
+      fc(i)%in=out
+      fc(i)%out=in
+      fc(i)%pt(1)=p2
+      fc(i)%pt(2)=p1
+      x1 = pt(p2)%x ; y1 = pt(p2)%y
+      x2 = pt(p1)%x ; y2 = pt(p1)%y
+      dx = x2-x1 ; dy = y2-y1
+      fc(i)%sx = dy
+      fc(i)%sy = -dx
+   endif 
    
    fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
    fc(i)%cen(2)=0.5_dp*(pt(p1)%y+pt(p2)%y)
@@ -105,14 +105,8 @@ do i=startBC,endBC
 
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
-   fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
    in=fc(i)%in
    out=fc(i)%out
- 
-   if(out>=0.or.in<=0)  then 
-      print*,in,out 
-      Stop 'in or out=0' 
-   endif
 
    if(fc(i)%bc==2001) then
       xc=cell(in)%cen(1)
@@ -121,7 +115,7 @@ do i=startBC,endBC
       p2=fc(i)%pt(2)
       check=dotprod(p1,p2,xc,yc)
       if(check>0.0_dp) then
-      print*,i,'in->out',2001 
+        !print*,i,'in->out',2001 
         fc(i)%pt(1)=p2
         fc(i)%pt(2)=p1
         x1 = pt(p2)%x ; y1 = pt(p2)%y
@@ -140,7 +134,7 @@ do i=startBC,endBC
       p2=fc(i)%pt(2)
       check=dotprod(p1,p2,xc,yc)
       if(check>0.0_dp) then
-      print*,i,'in->out',1001 
+        !print*,i,'in->out',1001 
         fc(i)%pt(1)=p2
         fc(i)%pt(2)=p1
         x1 = pt(p2)%x ; y1 = pt(p2)%y
@@ -151,46 +145,49 @@ do i=startBC,endBC
         !stop
       endif  
    endif  
+   fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
+   fc(i)%cen(2)=0.5_dp*(pt(p1)%y+pt(p2)%y)
 
 enddo
 
-!stop
 
-return
+do i=1,nof
+   in=fc(i)%in
+   out=fc(i)%out
 
+   if(in<0) then 
+     fc(i)%pt(1)=p2
+     fc(i)%pt(2)=p1
+     x1 = pt(p2)%x ; y1 = pt(p2)%y
+     x2 = pt(p1)%x ; y2 = pt(p1)%y
+     dx = x2-x1 ; dy = y2-y1
+     fc(i)%sx = dy
+     fc(i)%sy = -dx
+     fc(i)%in=out
+     fc(i)%out=in
+      write(33,*)x1,y1 
+      write(33,*)x2,y2 
+      write(33,*)
+      print*,'====>',i,in,out,fc(i)%bc 
+      !Stop 'in or out=0....-ve'
+   endif
 
-! cell center to face distance
-!do i=1,nof
-   !in=fc(i)%in
-   !out=fc(i)%out
-   
-!   p1=fc(i)%pt(1)
-!   p2=fc(i)%pt(2)
-   
-!   fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
-!   fc(i)%cen(2)=0.5_dp*(pt(p1)%y+pt(p2)%y)
-   
-!   ! Left cell distance 
-!   if(in/=0) then
-!   xc1=cell(in)%cen(1)
-!   yc1=cell(in)%cen(2)
-!   fc(i)%ldx = xfc-xc1 
-!   fc(i)%ldy = yfc-yc1 
+ 
+!   if(out>=0.or.in<=0)  then 
+!      p1=fc(i)%pt(1)
+!      p2=fc(i)%pt(2)
+!      x1 = pt(p1)%x ; y1 = pt(p1)%y
+!      x2 = pt(p2)%x ; y2 = pt(p2)%y
+!      write(33,*)x1,y1 
+!      write(33,*)x2,y2 
+!      write(33,*)
+!      print*,'====>',i,in,out,fc(i)%bc 
+!      !Stop 'in or out=0....' 
 !   endif
-!
-!   ! Right cell distance 
-!   if(out/=0) then
-!   xc2=cell(out)%cen(1)
-!   yc2=cell(out)%cen(2)
-!   fc(i)%rdx = xfc-xc2 
-!   fc(i)%rdy = yfc-yc2 
-!   endif
 
-!enddo
+enddo
 
-!do i=1,noc
-!   print*,i,(cell(i)%c2c(j), j=1,cell(i)%nc2c) 
-!enddo
+
 
 !print*, 'Max. cell nbr=',maxval(cell(:)%nc2c),'at node',maxloc(cell(:)%nc2c)
 !print*, 'Min. cell nbr=',minval(cell(:)%nc2c),'at node',minloc(cell(:)%nc2c)
@@ -300,29 +297,29 @@ integer(kind=i4) :: i
 integer(kind=i4) :: p1,p2
 integer(kind=i4) :: in,out
 integer(kind=i4),parameter :: nn=3
-!real(kind=dp)    :: x1,y1,x2,y2,xy(ndim,nn)
-!real(kind=dp)    :: dx,dy,area
 real(kind=dp)    :: xy(ndim,nn)
 real(kind=dp)    :: area
 
 fc(:)%cov=0.0_dp
 cell(:)%cov=0.0_dp
 do i=startFC,endFC
-   area=0.0_dp
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    in=fc(i)%in
    out=fc(i)%out
 
    xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   !xy(1,2)=cell(out)%cen(1) ; xy(2,2)=cell(out)%cen(2)
    xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
    xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
+   area=0.0_dp
    call triarea(xy,area,nn)
-   fc(i)%cov=fc(i)%cov+area
+   fc(i)%cov=area
 
    xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
    xy(1,2)=cell(out)%cen(1) ; xy(2,2)=cell(out)%cen(2)
    xy(1,3)=pt(p2)%x         ; xy(2,3)=pt(p2)%y
+   area=0.0_dp
    call triarea(xy,area,nn)
    fc(i)%cov=fc(i)%cov+area
  
@@ -357,13 +354,13 @@ do i=startFC,endFC
 enddo
 
 do i=startBC,endBC
-   area=0.0_dp
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    in=fc(i)%in
    xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
    xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
    xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
+   area=0.0_dp
    call triarea(xy,area,nn)
    fc(i)%cov=area
 
@@ -431,6 +428,8 @@ do i=1,nn
    dy=        xy(2,ip1)-xy(2,i)
    area=area+dx*dy
 enddo
+
+if (area <= 0.0_dp) stop 'geom,triarea,  -ve area'
 end subroutine triarea
 
 
@@ -743,18 +742,19 @@ close(4)
 close(3)
 
 
-!open(4,file='InCell.dat')
+open(4,file='InCell.dat')
 open(5,file='OutCell.dat')
 do i=startFC,endFC
-   !in=fc(i)%in
+   in=fc(i)%in
    out=fc(i)%out
-   !write(4,101)cell(in)%cen(1),cell(in)%cen(2)
+   write(4,101)cell(in)%cen(1),cell(in)%cen(2)
    write(5,101)cell(out)%cen(1),cell(out)%cen(2)
 enddo
-!close(4)
+close(4)
 close(5)
 
-open(3,file="Normals.dat")  
+open(3,file="NormalsOut.dat")  
+open(4,file="NormalsIn.dat")  
 do i=1,nof
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
@@ -762,7 +762,9 @@ do i=1,nof
    x2 = pt(p2)%x ; y2 = pt(p2)%y
    x1 = (x2+x1)/2.0_dp ; y1= (y2+y1)/2.0_dp
    write(3,100)x1,y1,fc(i)%sx*0.5,fc(i)%sy*0.5
+   write(4,100)x1,y1,-fc(i)%sx*0.5,-fc(i)%sy*0.5
 enddo
+close(4)
 close(3)
 
 100 format(1x,4(f15.8,1x))

@@ -4,9 +4,10 @@
 subroutine read_input
 use data_type,only:i4
 use param,only:  istart,flow_type,m_inf,aoa_deg,&  
-               & Rey,cfl_max,timemode,grad_type, & 
+               & Rey,timemode,grad_type, & 
                & iterlast,maxiter,minres,saveinterval,&
-               & scrinterval,niso,flux_type,ILIMIT, &
+               & scrinterval,niso,flux_type,ILIMIT, irs,& 
+               & cfl_max,cfl_type,CFL_ramp_steps, &
                & vortex, xref, yref,gridfile,scratch,inpfile,restart
 use commons,only:yes,no
 
@@ -32,7 +33,7 @@ read(inp,*)sdummy, flow_type
 read(inp,*)sdummy, m_inf
 read(inp,*)sdummy, aoa_deg
 read(inp,*)sdummy, Rey
-read(inp,*)sdummy, cfl_max
+read(inp,*)sdummy, cfl_type,cfl_max,CFL_ramp_steps
 read(inp,*)sdummy, timemode
 !read(inp,*)sdummy, gmaxiter, prectype, gerrtol
 read(inp,*)sdummy, grad_type
@@ -44,6 +45,7 @@ read(inp,*)sdummy, scrinterval
 read(inp,*)sdummy, niso
 read(inp,*)sdummy, flux_type
 read(inp,*)sdummy, ILIMIT
+read(inp,*)sdummy, irs 
 read(inp,*)sdummy, vortex, xref, yref
 read(inp,*)sdummy, gridfile
 close(inp)
@@ -70,6 +72,12 @@ if(timemode /= 'rk3' .and. timemode /= 'lusgs' .and. &
    inpstatus = no
 endif
 
+if(cfl_type /= 'tanh' .and. cfl_type /= 'ramp')then
+   print*,'Unknown flow type', cfl_type
+   print*,'Possible values: tanh, ramp'
+   inpstatus = no
+endif
+
 if(grad_type /= 'gg'.and. grad_type /= 'lsqr'.and.grad_type /= 'ggfc')then
    print*,'Unknown  gradient type :', grad_type
    print*,'Possible values: gg , lsqr , ggfc '
@@ -80,6 +88,12 @@ if(flux_type /= 'roe' .and. flux_type /= 'ausm'.and.flux_type /= &
     & 'vanleer'.and.flux_type /= 'rusanov')then
    print*,'Unknown flux ', flux_type
    print*,'Possible values: roe, ausm, vanleer, rusanov'
+   inpstatus = no
+endif
+
+if(irs.ne. no .and. irs.ne. yes)then
+   print*,'Unknown Implicit Residual Smoothening option',irs
+   print*,'Possible values: 0=no, 1=yes'
    inpstatus = no
 endif
 

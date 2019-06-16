@@ -83,6 +83,215 @@ enddo
 if(ILIMIT==1) call limit
 
 end subroutine Gradient_LSQR
+!======================================================================================
+subroutine Gradient_GG
+use grid 
+use commons
+use param,only:ilimit
+
+implicit none
+integer(kind=i4) :: i,j,in,out,p1,p2
+real(kind=dp) :: var,dx,dy
+
+do i=1,noc
+   cell(i)%grad(:,:)=0.0_dp
+enddo
+
+do i=startFC,endFC
+   in = fc(i)%in
+   out = fc(i)%out
+   p1=fc(i)%pt(1)       
+   p2=fc(i)%pt(2)       
+   !dx= pt(p2)%y-pt(p1)%y    
+   !dy=-(pt(p2)%x-pt(p1)%x)    
+   dx=fc(i)%sx
+   dy=fc(i)%sy
+
+   do j=1,nvar
+      var=fc(i)%qp(j)
+      cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
+      cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
+      cell(out)%grad(1,j)=cell(out)%grad(1,j)-var*dx
+      cell(out)%grad(2,j)=cell(out)%grad(2,j)-var*dy
+   enddo
+enddo
+
+do i=startBC,endBC
+   in = fc(i)%in
+   p1=fc(i)%pt(1)       
+   p2=fc(i)%pt(2)       
+   !dx= pt(p2)%y-pt(p1)%y    
+   !dy=-(pt(p2)%x-pt(p1)%x)    
+   dx=-fc(i)%sx
+   dy=-fc(i)%sy
+
+   do j=1,nvar
+      var=fc(i)%qp(j)
+      cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
+      cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
+   enddo
+enddo
+
+
+do i=1,noc
+   var=cell(i)%cv
+   do j=1,nvar
+      cell(i)%grad(1,j)=cell(i)%grad(1,j)/var
+      cell(i)%grad(2,j)=cell(i)%grad(2,j)/var
+   enddo
+enddo
+
+if(ILIMIT==1) call limit
+
+end subroutine Gradient_GG
+!======================================================================================
+! GG gradient using diamond path around an edge 
+subroutine Gradient_GG_FC
+use grid 
+use commons
+use param,only:ilimit
+implicit none
+integer(kind=i4) :: i,j,in,out,p1,p2
+integer(kind=i4),parameter :: nn=3
+real(kind=dp) :: dx,dy
+
+real(kind=dp) :: a1,a2
+real(kind=dp) :: grad1(ndim,nvar)
+real(kind=dp) :: grad2(ndim,nvar)
+real(kind=dp) :: prim(nvar,nn),xy(ndim,nn)
+
+
+do i=1,noc
+   cell(i)%grad(:,:)=0.0_dp
+enddo
+
+do i=1,nof
+   fc(i)%grad(:,:) =0.0_dp
+enddo
+
+! Face gradient and cell gradient is calculated 
+do i=startFC,endFC
+   a1=0.0_dp
+   a2=0.0_dp
+
+   in = fc(i)%in
+   out = fc(i)%out
+   p1=fc(i)%pt(1)       
+   p2=fc(i)%pt(2)       
+
+   ! triangular cell to the right of the edge
+   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   xy(1,2)=cell(out)%cen(1) ; xy(2,2)=cell(out)%cen(2)
+   xy(1,3)=pt(p2)%x         ; xy(2,3)=pt(p2)%y
+   prim(:,1)=pt(p1)%prim(:)       
+   prim(:,2)=cell(out)%qp(:)
+   prim(:,3)=pt(p2)%prim(:)       
+   grad1=0.0_dp 
+   ! gradient to the right of cell
+   call gradtrixy(prim,xy,grad1,a1,nn)
+
+   ! triangular cell to the left  of the edge
+   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
+   xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
+   prim(:,1)=pt(p1)%prim(:)       
+   prim(:,2)=pt(p2)%prim(:)       
+   prim(:,3)=cell(in)%qp(:)
+
+   ! gradient to the left  of cell
+   grad2=0.0_dp
+   call gradtrixy(prim,xy,grad2,a2,nn)
+
+   ! face gradient
+   fc(i)%grad(1,:)=(a1*grad1(1,:)+a2*grad2(1,:))/(a1+a2) 
+   fc(i)%grad(2,:)=(a1*grad1(2,:)+a2*grad2(2,:))/(a1+a2) 
+   
+   ! adding contribution to the cells sharing the face 
+   cell(in)%grad(1,:)=cell(in)%grad(1,:)+ fc(i)%grad(1,:)*(a1+a2)
+   cell(in)%grad(2,:)=cell(in)%grad(2,:)+ fc(i)%grad(2,:)*(a1+a2)
+   cell(out)%grad(1,:)=cell(out)%grad(1,:)+ fc(i)%grad(1,:)*(a1+a2)
+   cell(out)%grad(2,:)=cell(out)%grad(2,:)+ fc(i)%grad(2,:)*(a1+a2)
+enddo
+ 
+! gradient at the boundary faces and to the cells   
+do i=startBC,endBC
+   in = fc(i)%in
+   p1=fc(i)%pt(1)       
+   p2=fc(i)%pt(2)       
+
+   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
+   xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
+
+   prim(:,1)=pt(p1)%prim(:)       
+   prim(:,2)=pt(p2)%prim(:)       
+   prim(:,3)=cell(in)%qp(:)
+   grad1=0.0_dp
+   call gradtrixy(prim,xy,grad1,a1,nn)
+
+   fc(i)%grad(1,:)=grad1(1,:)
+   fc(i)%grad(2,:)=grad1(2,:)  
+   cell(in)%grad(1,:)=cell(in)%grad(1,:)+fc(i)%grad(1,:)*a1
+   cell(in)%grad(2,:)=cell(in)%grad(2,:)+fc(i)%grad(2,:)*a1
+enddo
+
+! Finally cell gradient, using cell co-volume
+do i=1,noc
+   do j=1,nvar
+      cell(i)%grad(1,j)= cell(i)%grad(1,j)/cell(i)%cov
+      cell(i)%grad(2,j)= cell(i)%grad(2,j)/cell(i)%cov
+   enddo
+enddo
+
+if(ILIMIT==1) call limit
+
+
+!100 format(1x,4(f15.8,1x))
+contains
+
+subroutine gradtrixy(prim,xy,grad,tarea,nn)
+implicit none
+integer(kind=i4) :: i,nn,ip1
+real(kind=dp)    :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
+real(kind=dp)    :: tarea,var(nvar) 
+
+! area of a polygon
+tarea=0.0_dp
+do i=1,nn
+   ip1=i+1
+   if(i==nn) ip1=1
+   dx=0.5_dp*(xy(1,ip1)+xy(1,i)) 
+   dy=        xy(2,ip1)-xy(2,i)
+   tarea=tarea+dx*dy
+enddo
+
+if (tarea <= 0.0_dp) stop 'ggfc,gradtrixy,  -ve area'
+
+! gradient in a triangular cell
+!grad(1,:)= 0.5_dp*(prim(:,1)*(xy(2,2)-xy(2,3))+prim(:,2)*(xy(2,3)-xy(2,1)) & 
+!          &      +prim(:,3)*(xy(2,1)-xy(2,2)))
+!grad(2,:)=-0.5_dp*(prim(:,1)*(xy(1,2)-xy(1,3))+prim(:,2)*(xy(1,3)-xy(1,1)) &
+!          &      +prim(:,3)*(xy(1,1)-xy(1,2)))
+
+do i=1,nn
+   ip1=i+1
+   if(i==nn) ip1=1
+   var(:)=0.5_dp*(prim(:,i)+prim(:,ip1)) 
+   dx=  xy(2,ip1)-xy(2,i) 
+   dy=-(xy(1,ip1)-xy(1,i))
+!   dx=  xy(1,ip1)-xy(1,i) 
+!   dy=  xy(2,ip1)-xy(2,i) 
+   grad(1,:)=grad(1,:)+var(:)*dx
+   grad(2,:)=grad(2,:)+var(:)*dy
+enddo
+
+grad(1,:)=grad(1,:)/tarea
+grad(2,:)=grad(2,:)/tarea
+
+ 
+end subroutine gradtrixy
+
+end subroutine Gradient_GG_FC
 
 !======================================================================================
 !subroutine Gradient_LSQR
@@ -158,202 +367,122 @@ end subroutine Gradient_LSQR
 !if(ILIMIT==1) call limit
 !
 !end subroutine Gradient_LSQR
+!
+!!======================================================================================
+!subroutine Gradient_GG_FC1
+!use grid 
+!use commons
+!use param,only:ilimit
+!implicit none
+!integer(kind=i4) :: i,j,in,out,p1,p2
+!real(kind=dp)    :: pv(nvar)
+!real(kind=dp)    :: x1,y1,x2,y2,dx,dy
+!
+!
+!do i=1,noc
+!   cell(i)%grad(:,:)=0.d0
+!enddo
+!
+!do i=startFC,endFC
+!      in = fc(i)%in
+!      out = fc(i)%out
+!      p1=fc(i)%pt(1)       
+!      p2=fc(i)%pt(2)       
+!      fc(i)%grad(1,:)=0.d0
+!      fc(i)%grad(2,:)=0.d0
+!
+!      do j=1,nvar    
+!                  pv(j)=0.5d0*(pt(p1)%prim(j)+cell(out)%qp(j)) 
+!                  x1 = pt(p1)%x    ; y1 = pt(p1)%y
+!                  x2 = cell(out)%cen(1) ; y2 = cell(out)%cen(2)
+!                  dx = y2-y1       ;  dy = -(x2-x1) 
+!                  fc(i)%grad(1,j)=fc(i)%grad(1,j)+pv(j)*dx
+!                  fc(i)%grad(2,j)=fc(i)%grad(2,j)+pv(j)*dy
+!         
+!                  pv(j)=0.5d0*(cell(out)%qp(j)+pt(p2)%prim(j)) 
+!                  x1 = cell(out)%cen(1) ; y1 = cell(out)%cen(2)
+!                  x2 = pt(p2)%x    ; y2 = pt(p2)%y
+!                  dx = y2-y1       ;  dy = -(x2-x1) 
+!                  fc(i)%grad(1,j)=fc(i)%grad(1,j)+pv(j)*dx
+!                  fc(i)%grad(2,j)=fc(i)%grad(2,j)+pv(j)*dy
+!              
+!                  pv(j)=0.5d0*(pt(p2)%prim(j)+cell(in)%qp(j)) 
+!                  x1 = pt(p2)%x    ; y1 = pt(p2)%y
+!                  x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
+!                  dx = y2-y1       ;  dy = -(x2-x1) 
+!                  fc(i)%grad(1,j)=fc(i)%grad(1,j)+pv(j)*dx
+!                  fc(i)%grad(2,j)=fc(i)%grad(2,j)+pv(j)*dy
+!              
+!                  pv(j)=0.5d0*(cell(in)%qp(j)+pt(p1)%prim(j)) 
+!                  x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
+!                  x2 = pt(p1)%x    ; y2 = pt(p1)%y
+!                  dx = y2-y1       ;  dy = -(x2-x1) 
+!                  fc(i)%grad(1,j)=fc(i)%grad(1,j)+pv(j)*dx
+!                  fc(i)%grad(2,j)=fc(i)%grad(2,j)+pv(j)*dy
+!     enddo
+!     fc(i)%grad(1,:)=fc(i)%grad(1,:)/fc(i)%cov
+!     fc(i)%grad(2,:)=fc(i)%grad(2,:)/fc(i)%cov
+!
+!     cell(in)%grad(1,:)=cell(in)%grad(1,:)+fc(i)%grad(1,:)*fc(i)%cov  
+!     cell(in)%grad(2,:)=cell(in)%grad(2,:)+fc(i)%grad(2,:)*fc(i)%cov  
+!     cell(out)%grad(1,:)=cell(out)%grad(1,:)+fc(i)%grad(1,:)*fc(i)%cov  
+!     cell(out)%grad(2,:)=cell(out)%grad(2,:)+fc(i)%grad(2,:)*fc(i)%cov  
+!enddo
+!    
+!do i=startBC,endBC
+!      in = fc(i)%in
+!      p1=fc(i)%pt(1)       
+!      p2=fc(i)%pt(2)       
+!
+!      fc(i)%grad(1,:)=0.d0
+!      fc(i)%grad(2,:)=0.d0
+!
+!      do j=1,nvar    
+!                 pv(j)=0.5d0*(pt(p1)%prim(j)+pt(p2)%prim(j)) 
+!                 x1 = pt(p1)%x ; y1 = pt(p1)%y
+!                 x2 = pt(p2)%x ; y2 = pt(p2)%y
+!                 dx = y2-y1    ;  dy = -(x2-x1) 
+!                 fc(i)%grad(1,j)=fc(i)%grad(1,j)+pv(j)*dx
+!                 fc(i)%grad(2,j)=fc(i)%grad(2,j)+pv(j)*dy
+!        
+!                 pv(j)=0.5d0*(pt(p2)%prim(j)+cell(in)%qp(j)) 
+!                 x1 = pt(p2)%x    ; y1 = pt(p2)%y
+!                 x2 = cell(in)%cen(1) ; y2 = cell(in)%cen(2)
+!                 dx = y2-y1       ;  dy = -(x2-x1) 
+!                 fc(i)%grad(1,j)=fc(i)%grad(1,j)+pv(j)*dx
+!                 fc(i)%grad(2,j)=fc(i)%grad(2,j)+pv(j)*dy
+!             
+!                 pv(j)=0.5d0*(cell(in)%qp(j)+pt(p1)%prim(j)) 
+!                 x1 = cell(in)%cen(1) ; y1 = cell(in)%cen(2)
+!                 x2 = pt(p1)%x    ; y2 = pt(p1)%y
+!                 dx = y2-y1       ;  dy = -(x2-x1) 
+!                 fc(i)%grad(1,j)=fc(i)%grad(1,j)+pv(j)*dx
+!                 fc(i)%grad(2,j)=fc(i)%grad(2,j)+pv(j)*dy
+!     enddo
+!     fc(i)%grad(1,:)=fc(i)%grad(1,:)/fc(i)%cov
+!     fc(i)%grad(2,:)=fc(i)%grad(2,:)/fc(i)%cov
+!    
+!     cell(in)%grad(1,:)=cell(in)%grad(1,:)+fc(i)%grad(1,:)*fc(i)%cov  
+!     cell(in)%grad(2,:)=cell(in)%grad(2,:)+fc(i)%grad(2,:)*fc(i)%cov  
+!
+!enddo
+!
+!
+!do i=1,noc
+!   do j=1,nvar
+!   cell(i)%grad(1,j)= cell(i)%grad(1,j)/cell(i)%cov
+!   cell(i)%grad(2,j)= cell(i)%grad(2,j)/cell(i)%cov
+!   enddo
+!enddo
+!
+!if(ILIMIT==1) call limit
+!
+!
+!!100 format(1x,4(f15.8,1x))
+!end subroutine Gradient_GG_FC1
+
 
 !======================================================================================
-subroutine Gradient_GG
-use grid 
-use commons
-use param,only:ilimit
-
-implicit none
-integer(kind=i4) :: i,j,in,out
-real(kind=dp) :: var,dx,dy
-
-do i=1,noc
-   cell(i)%grad(:,:)=0.0_dp
-enddo
-
-do i=startFC,endFC
-   in = fc(i)%in
-   out = fc(i)%out
-   dx=fc(i)%sx
-   dy=fc(i)%sy
-
-   do j=1,nvar
-      var=fc(i)%qp(j)
-      cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
-      cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
-      cell(out)%grad(1,j)=cell(out)%grad(1,j)-var*dx
-      cell(out)%grad(2,j)=cell(out)%grad(2,j)-var*dy
-   enddo
-enddo
-
-do i=startBC,endBC
-   in = fc(i)%in
-   dx=fc(i)%sx
-   dy=fc(i)%sy
-
-   do j=1,nvar
-      var=fc(i)%qp(j)
-      cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
-      cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
-   enddo
-enddo
-
-
-do i=1,noc
-   var=cell(i)%cv
-   do j=1,nvar
-      cell(i)%grad(1,j)=cell(i)%grad(1,j)/var
-      cell(i)%grad(2,j)=cell(i)%grad(2,j)/var
-   enddo
-enddo
-
-if(ILIMIT==1) call limit
-
-end subroutine Gradient_GG
-
-!======================================================================================
-
-subroutine Gradient_GG_FC
-use grid 
-use commons
-use param,only:ilimit
-implicit none
-integer(kind=i4) :: i,j,in,out,p1,p2
-integer(kind=i4),parameter :: nn=3
-!real(kind=dp) :: q2, pv(nvar)
-real(kind=dp) :: dx,dy
-
-real(kind=dp) :: a1,a2
-real(kind=dp) :: gradxy(ndim,nvar)
-real(kind=dp) :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
-
-
-do i=1,noc
-   cell(i)%grad(:,:)=0.0_dp
-enddo
-
-! GG gradient using diamond path around an edge 
-! Face gradient and cell gradient is calculated 
-do i=startFC,endFC
-   in = fc(i)%in
-   out = fc(i)%out
-   p1=fc(i)%pt(1)       
-   p2=fc(i)%pt(2)       
-
-   ! triangular cell to the right of the edge
-   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
-   xy(1,2)=cell(out)%cen(1) ; xy(2,2)=cell(out)%cen(2)
-   xy(1,3)=pt(p2)%x         ; xy(2,3)=pt(p2)%y
-   prim(:,1)=pt(p1)%prim(:)       
-   prim(:,2)=cell(out)%qp(:)
-   prim(:,3)=pt(p2)%prim(:)       
-   ! gradient to the right of cell
-   grad=0.0_dp
-   call gradtrixy(prim,xy,grad,a1,nn)
-   gradxy=grad
-
-   ! triangular cell to the left  of the edge
-   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
-   xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
-   xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
-   prim(:,1)=pt(p1)%prim(:)       
-   prim(:,2)=pt(p2)%prim(:)       
-   prim(:,3)=cell(in)%qp(:)
-
-   ! gradient to the left  of cell
-   grad=0.0_dp
-   call gradtrixy(prim,xy,grad,a2,nn)
-   gradxy=gradxy+grad
-   
-   ! adding contribution to the cells sharing the face 
-   cell(in)%grad(1,:)=cell(in)%grad(1,:)+gradxy(1,:)
-   cell(in)%grad(2,:)=cell(in)%grad(2,:)+gradxy(2,:)
-   cell(out)%grad(1,:)=cell(out)%grad(1,:)+gradxy(1,:)
-   cell(out)%grad(2,:)=cell(out)%grad(2,:)+gradxy(2,:)
-   ! face gradient
-   fc(i)%grad(1,:)=gradxy(1,:)/fc(i)%cov 
-   fc(i)%grad(2,:)=gradxy(2,:)/fc(i)%cov     
-enddo
- 
-! gradient at the boundary faces and to the cells   
-do i=startBC,endBC
-   in = fc(i)%in
-   p1=fc(i)%pt(1)       
-   p2=fc(i)%pt(2)       
-
-   grad=0.0_dp
-   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
-   xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
-   xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
-
-   prim(:,1)=pt(p1)%prim(:)       
-   prim(:,2)=pt(p2)%prim(:)       
-   prim(:,3)=cell(in)%qp(:)
-   call gradtrixy(prim,xy,grad,a1,nn)
-   gradxy=grad
-
-   cell(in)%grad(1,:)=cell(in)%grad(1,:)+gradxy(1,:)
-   cell(in)%grad(2,:)=cell(in)%grad(2,:)+gradxy(2,:)
-   fc(i)%grad(1,:)=gradxy(1,:)/fc(i)%cov 
-   fc(i)%grad(2,:)=gradxy(2,:)/fc(i)%cov     
-enddo
-
-! Finally cell gradient, using cell co-volume
-do i=1,noc
-   do j=1,nvar
-      cell(i)%grad(1,j)= cell(i)%grad(1,j)/cell(i)%cov
-      cell(i)%grad(2,j)= cell(i)%grad(2,j)/cell(i)%cov
-   enddo
-enddo
-
-if(ILIMIT==1) call limit
-
-
-!100 format(1x,4(f15.8,1x))
-contains
-
-subroutine gradtrixy(prim,xy,grad,area,nn)
-implicit none
-integer(kind=i4) :: i,nn,ip1
-real(kind=dp)    :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
-real(kind=dp)    :: area,var(nvar) 
-
-! area of a polygon
-area=0.0_dp
-do i=1,nn
-   ip1=i+1
-   if(i==nn) ip1=1
-   dx=0.5_dp*(xy(1,ip1)+xy(1,i)) 
-   dy=        xy(2,ip1)-xy(2,i)
-   area=area+dx*dy
-enddo
-
-! gradient in a triangular cell
-!grad(1,:)= 0.5_dp*(prim(:,1)*(xy(2,2)-xy(2,3))+prim(:,2)*(xy(2,3)-xy(2,1)) & 
-!          &      +prim(:,3)*(xy(2,1)-xy(2,2)))
-!grad(2,:)=-0.5_dp*(prim(:,1)*(xy(1,2)-xy(1,3))+prim(:,2)*(xy(1,3)-xy(1,1)) &
-!          &      +prim(:,3)*(xy(1,1)-xy(1,2)))
-
-grad=0.0_dp
-do i=1,nn
-   ip1=i+1
-   if(i==nn) ip1=1
-   var(:)=0.5_dp*(prim(:,i)+prim(:,ip1)) 
-   dx=  xy(2,ip1)-xy(2,i) 
-   dy=-(xy(1,ip1)-xy(1,i))
-!   dx=  xy(1,ip1)-xy(1,i) 
-!   dy=  xy(2,ip1)-xy(2,i) 
-   grad(1,:)=grad(1,:)+var(:)*dx
-   grad(2,:)=grad(2,:)+var(:)*dy
-enddo
-
-
-end subroutine gradtrixy
-
-end subroutine Gradient_GG_FC
-
 
 !subroutine Gradient_GG_FC
 !use grid 

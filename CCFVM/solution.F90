@@ -19,7 +19,7 @@ subroutine initialize
 use param
 use grid
 implicit none
-integer(kind=i4)  :: j
+integer(kind=i4)  :: i,j
 
 q_inf = 1.d0
 aoa     = aoa_deg*PI/180.0d0
@@ -47,21 +47,36 @@ fs_inf(4)=p_inf
 
 
 !     Print some useful info
+print*
+print*
+write(*,9)('-',i=1,75)
+print*,'            --Simulation setup--  '
+write(*,9)('-',i=1,75)
+print*
 if(flow_type == 'inviscid') print*,'Euler computation'
 if(flow_type == 'laminar')  print*,'Laminar Navier-Stokes computation'
 if(flow_type == 'rans')print*,'Turbulent Navier-Stokes computation'
+if(grad_type == 'gg')print*,'Gradient Computation method : Green-Gauss'
+if(grad_type == 'ggfc')print*,'Gradient Computation method : Diamond Path reconstruction method (Green-Gauss)'
+if(grad_type == 'lsqr')print*,'Gradient Computation method : Least square Method'
+if(irs==yes) print*,'Implicit Residual Smoothening method applied'
+if(Timemode=='lusgs') print*,'Time mode : LUSGS'
+if(Timemode=='rk3') print*,'Time mode : rk3'
+write(*,9)('-',i=1,75)
 print*,'Free-stream values:'
 write(*,'(5x, " Mach number =", f8.4)')m_inf
 write(*,'(5x, " AOA         =", f8.4)')aoa_deg
 write(*,'(5x, " u velocity  =", f8.4)')u_inf
 write(*,'(5x, " v velocity  =", f8.4)')v_inf
 write(*,'(5x, " Pressure    =", f15.6)')p_inf
+write(*,9)('-',i=1,75)
 
 do j=1,noc
    cell(j)%qc(:) = qinf(:)
    cell(j)%phi(:) = 1.0_dp 
 enddo
 
+9     format(75a)
 end
 !-----------------------------------------------------------------------------
 ! Save flow solution into a file. Conserved variables are saved.

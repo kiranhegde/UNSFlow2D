@@ -88,9 +88,11 @@ do ie=startBC,endBC
    endif
 enddo
 
-
+! central implicit residual smoothening iterations
+if (irs==yes) call cirs
 
 return
+
 if (flow_type=="laminar") then
     call viscous_flux
 elseif (flow_type=="turbulent") then

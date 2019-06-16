@@ -43,7 +43,7 @@ real(kind=dp) :: lam1,lam2,lam3,mach
 
 nx = fc(ie)%sx
 ny = fc(ie)%sy
-dr =  dsqrt(nx*nx + ny*ny)
+dr = dsqrt(nx*nx + ny*ny)
 nx = nx/dr
 ny = ny/dr
 tx=-ny

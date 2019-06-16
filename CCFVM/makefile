@@ -12,9 +12,11 @@ FFLAGS = -march=native  -O5  -pipe -ffree-form \
                         -Wintrinsic-shadow -Wintrinsics-std \
                         -Wline-truncation -Wno-align-commons -Wno-tabs -Wreal-q-constant \
                         -Wsurprising -Wunderflow \
-                        -Wunused-parameter -Wunused -Wuninitialized  \
-                        -fbacktrace  \
-                        -ffpe-summary=zero,overflow,underflow,denormal\
+                        -Wuninitialized \
+                        -fbacktrace -Wunused-parameter -Wunused  \
+                        -ffpe-summary=zero,overflow,underflow,denormal \
+	               # -Wunused-parameter -Wunused \ 
+
                       #  -Wimplicit-procedure -Wimplicit-interface\
 			-Wuse-without-only -fbacktrace \
 		#	-Wuse-without-only -fbacktrace -Wrealloc-lhs -Wimplicit-interface\

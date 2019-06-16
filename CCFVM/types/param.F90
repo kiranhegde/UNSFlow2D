@@ -16,9 +16,9 @@ real(kind=dp) :: xmin, xmax, ymin, ymax
 character gridfile*64, inpfile*32
 
 real(kind=dp) :: CFL,cfl_max,MINRES, dtglobal, gerrtol
-character(len=24) :: timemode
+character(len=24) :: timemode,cfl_type
 integer(kind=i4)  :: iter, ITERLAST, MAXITER, saveinterval, &
-                     gmaxiter, prectype, scrinterval
+                     gmaxiter, prectype, scrinterval,CFL_ramp_steps
 
 real(kind=dp),allocatable :: airk(:), birk(:)
 integer(kind=i4)  :: NIRK
@@ -50,6 +50,8 @@ parameter(farfield=5)
 
 ! Limiter factor for MUSCL
 integer(kind=i4)  :: GRADTYPE, ILIMIT
+! implicit residual smoothening
+integer(kind=i4)  :: irs
 real(kind=dp) :: LFACT, ALBADA11, ALBADA12, ALBADA21, ALBADA22
 
 ! Size of connectivity list; required by mayavi
