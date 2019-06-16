@@ -74,9 +74,9 @@ mbar2  = 0.5_dp*(unl*unl+unr*unr)/(c12*c12)
 
 !mref = dmax1(m_inf,dsqrt(mbar2))
 !mref = dmin1(mref,1.0)
-mref = m_inf
+!mref = m_inf
 !mref = 1e-2 
-!mref = dmax1(0.32,0.5*m_inf)
+mref = dmax1(0.32,0.5*m_inf)
 
 if(mbar2 >=1.0_dp) then
 fa = 1.0_dp

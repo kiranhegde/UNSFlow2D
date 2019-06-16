@@ -175,10 +175,11 @@ real(kind=dp)   :: cfl1,cfl2,exp_factor,s,cfl_no
        !cfl_no = 0.5_dp*cfl_max*(1+dtanh(s*10.0_dp - 5.0_dp))
    elseif(cfl_type=='ramp'.and.iter<=CFL_ramp_steps) then 
    ! Ramping the cfl number to cfl_max in steps
-       CFL1 = 1.0_dp   ! Initial CFL 
+       CFL1 = CFL_min  ! Initial CFL 
        CFL2 = CFL_max  ! Final CFL 
        exp_factor = 0.5_dp
-       s = real(iter,dp)/real(CFL_ramp_steps-1,dp)
+       !s = real(iter,dp)/real(CFL_ramp_steps-1,dp)
+       s = real(iter,dp)/real(CFL_ramp_steps,dp)
        CFL_no = CFL1 + (CFL2-CFL1)*(1.0_dp-dexp(-s*exp_factor))/(1.0_dp-dexp(-exp_factor))
    endif
 
@@ -235,10 +236,9 @@ enddo
 write(*,9)('-',i=1,75)
 9     format(75a)
 write(*,10)m_inf,aoa_deg,Rey,CFL
-10    format(' Mach =',f6.3,'    AOA =',f6.2, '  Rey = ',f15.2, &
-       '   CFL = ',f12.2)
+10    format(' Mach =',f6.3,'    AOA =',f6.2, '  Rey = ',f9.2,'   CFL = ',f12.2)
 write(*,11)flux_type,ilimit, grad_type, gridfile
-11    format(' Flux = ',a7, '  Lim = ',i2,' Gradient = ',a7,'Grid= ',a30)
+11    format(' Flux = ',a7, '  Lim = ',i2,4x,' Gradient = ',a7,4x,'Grid= ',a30)
 write(*,9)('-',i=1,75)
 write(*,'(" Iterations        =",i12)')iter
 write(*,'(" Global dt         =",e16.6)') dtglobal
@@ -306,8 +306,8 @@ do i=1,noc
       call con2prim(con)
       write(3,*)
       print*,'Density = ',rho
-      print*,'u vel   = ',u
-      print*,'v vel   = ',v
+      print*,'u-vel   = ',u
+      print*,'v-vel   = ',v
       print*,'Pressure= ',p
       print*,'La = ',cell(i)%la
    print*
@@ -341,7 +341,7 @@ OPEN(funit,file='tecplt.dat')
 WRITE(funit,*) 'TITLE = "flo2d output" '
 
 !WRITE(funit,*) 'VARIABLES="X","Y","rho","u","v","p" '
-WRITE(funit,*) 'VARIABLES="X","Y","rho","u","v","p","M"'
+WRITE(funit,*) 'VARIABLES="X","Y","density","u-velocity","v-velocity","Pressure","Mach","Entropy" '
 !WRITE(funit,*) 'ZONE F=FEPOINT,ET=quadrilateral'
 WRITE(funit,*) 'ZONE F=FEPOINT,ET=',trim(ctype)
 WRITE(funit,*) 'N=',nop,',E=',noc
@@ -357,7 +357,7 @@ do i=1,nop
     entropy=log10(po/ro**GAMMA/ent_inf)
 
     !WRITE(funit,*)pt(i)%x,pt(i)%y,r,u,v,p,mach
-    WRITE(funit,100)pt(i)%x,pt(i)%y,ro,uo,vo,po,mach
+    WRITE(funit,100)pt(i)%x,pt(i)%y,ro,uo,vo,po,mach,entropy
       
 END DO
 DO i=1,noc

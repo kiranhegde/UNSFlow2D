@@ -7,7 +7,7 @@ use param,only:  istart,flow_type,m_inf,aoa_deg,&
                & Rey,timemode,grad_type, & 
                & iterlast,maxiter,minres,saveinterval,&
                & scrinterval,niso,flux_type,ILIMIT, irs,& 
-               & cfl_max,cfl_type,CFL_ramp_steps, &
+               & cfl_min,cfl_max,cfl_type,CFL_ramp_steps, &
                & vortex, xref, yref,gridfile,scratch,inpfile,restart
 use commons,only:yes,no
 
@@ -33,7 +33,7 @@ read(inp,*)sdummy, flow_type
 read(inp,*)sdummy, m_inf
 read(inp,*)sdummy, aoa_deg
 read(inp,*)sdummy, Rey
-read(inp,*)sdummy, cfl_type,cfl_max,CFL_ramp_steps
+read(inp,*)sdummy, cfl_type,cfl_min,cfl_max,CFL_ramp_steps
 read(inp,*)sdummy, timemode
 !read(inp,*)sdummy, gmaxiter, prectype, gerrtol
 read(inp,*)sdummy, grad_type

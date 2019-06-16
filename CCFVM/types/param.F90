@@ -15,7 +15,7 @@ real(kind=dp) :: xmin, xmax, ymin, ymax
 ! any other value implies hybrid grid
 character gridfile*64, inpfile*32
 
-real(kind=dp) :: CFL,cfl_max,MINRES, dtglobal, gerrtol
+real(kind=dp) :: CFL,cfl_max,cfl_min,MINRES, dtglobal, gerrtol
 character(len=24) :: timemode,cfl_type
 integer(kind=i4)  :: iter, ITERLAST, MAXITER, saveinterval, &
                      gmaxiter, prectype, scrinterval,CFL_ramp_steps
