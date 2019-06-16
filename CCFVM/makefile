@@ -2,7 +2,8 @@
 TARGETDIR="/home/kiranhegde/FlowSolvers/UNSFlow2DRun/"
 #TARGETDIR="./"
 
-FC     =gfortran
+#FC     =gfortran
+FC     =mpif90
 FFLAGS = -march=native  -O5  -pipe -ffree-form \
 			-Wall -Wextra -Wtabs -Wintrinsics-std -Wsurprising -Waliasing \
 			-Wno-unused-parameter -Wno-unused-dummy-argument \

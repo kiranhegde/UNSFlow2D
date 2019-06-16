@@ -142,6 +142,7 @@ do while(iter .lt. MAXITER .and. fres .gt. MINRES)
       print *, 'Time taken :',te,te-ts
       ts=te   
    endif
+   call flush(6)
 enddo
 close(99)
 
@@ -172,9 +173,9 @@ real(kind=dp)   :: cfl1,cfl2,exp_factor,s,cfl_no
        s = real(iter,dp)/real(CFL_ramp_steps-1,dp)
        cfl_no = 0.5_dp*cfl_max*(1.0_dp+dtanh(s*7.0_dp - 3.5_dp))
        !cfl_no = 0.5_dp*cfl_max*(1+dtanh(s*10.0_dp - 5.0_dp))
-   elseif(cfl_type=='ramp') then 
+   elseif(cfl_type=='ramp'.and.iter<=CFL_ramp_steps) then 
    ! Ramping the cfl number to cfl_max in steps
-       CFL1 = 0.5_dp   ! Initial CFL 
+       CFL1 = 1.0_dp   ! Initial CFL 
        CFL2 = CFL_max  ! Final CFL 
        exp_factor = 0.5_dp
        s = real(iter,dp)/real(CFL_ramp_steps-1,dp)
