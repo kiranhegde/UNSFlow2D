@@ -44,7 +44,7 @@ do i=startFC,endFC
    wx1=alfa1-alfa2*r12/r11
    wy1=alfa2
 
-   do k=1,nvar
+   do k=1,ngrad
       var=cell(out)%qp(k)-cell(in)%qp(k) 
       cell(in)%grad(1,k)=cell(in)%grad(1,k)+var*wx0
       cell(in)%grad(2,k)=cell(in)%grad(2,k)+var*wy0
@@ -70,7 +70,7 @@ do i=startBC,endBC
    wx0=alfa1-alfa2*r12/r11
    wy0=alfa2
 
-   do k=1,nvar
+   do k=1,ngrad
       var=0.5_dp*(pt(p1)%prim(k)+pt(p2)%prim(k))-cell(in)%qp(k)
       cell(in)%grad(1,k)=cell(in)%grad(1,k)+var*wx0
       cell(in)%grad(2,k)=cell(in)%grad(2,k)+var*wy0
@@ -107,7 +107,7 @@ do i=startFC,endFC
    dx=fc(i)%sx
    dy=fc(i)%sy
 
-   do j=1,nvar
+   do j=1,ngrad
       var=fc(i)%qp(j)
       cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
       cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
@@ -125,7 +125,7 @@ do i=startBC,endBC
    dx=-fc(i)%sx
    dy=-fc(i)%sy
 
-   do j=1,nvar
+   do j=1,ngrad
       var=fc(i)%qp(j)
       cell(in)%grad(1,j)=cell(in)%grad(1,j)+var*dx
       cell(in)%grad(2,j)=cell(in)%grad(2,j)+var*dy
@@ -135,7 +135,7 @@ enddo
 
 do i=1,noc
    var=cell(i)%cv
-   do j=1,nvar
+   do j=1,ngrad
       cell(i)%grad(1,j)=cell(i)%grad(1,j)/var
       cell(i)%grad(2,j)=cell(i)%grad(2,j)/var
    enddo
@@ -156,9 +156,9 @@ integer(kind=i4),parameter :: nn=3
 real(kind=dp) :: dx,dy
 
 real(kind=dp) :: a1,a2
-real(kind=dp) :: grad1(ndim,nvar)
-real(kind=dp) :: grad2(ndim,nvar)
-real(kind=dp) :: prim(nvar,nn),xy(ndim,nn)
+real(kind=dp) :: grad1(ndim,ngrad)
+real(kind=dp) :: grad2(ndim,ngrad)
+real(kind=dp) :: prim(npvar,nn),xy(ndim,nn)
 
 
 do i=1,noc
@@ -237,7 +237,7 @@ enddo
 
 ! Finally cell gradient, using cell co-volume
 do i=1,noc
-   do j=1,nvar
+   do j=1,npvar
       cell(i)%grad(1,j)= cell(i)%grad(1,j)/cell(i)%cov
       cell(i)%grad(2,j)= cell(i)%grad(2,j)/cell(i)%cov
    enddo
@@ -252,8 +252,8 @@ contains
 subroutine gradtrixy(prim,xy,grad,tarea,nn)
 implicit none
 integer(kind=i4) :: i,nn,ip1
-real(kind=dp)    :: prim(nvar,nn),grad(ndim,nvar),xy(ndim,nn)
-real(kind=dp)    :: tarea,var(nvar) 
+real(kind=dp)    :: prim(npvar,nn),grad(ndim,ngrad),xy(ndim,nn)
+real(kind=dp)    :: tarea,var(npvar) 
 
 ! area of a polygon
 tarea=0.0_dp

@@ -4,11 +4,11 @@ use data_type
 use commons
 implicit none
 
-integer(kind=i4):: nop,nof,noc,noc_bc=0,startBC=1,endBC=1,startfc=1,endfc=1,nbf 
+integer(kind=i4):: nop,nof,noc,nogc,startBC=1,endBC=1,startfc=1,endfc=1,nbf 
 
 type points
      real(kind=dp) :: x,y,z
-     real(kind=dp) :: prim(1:nvar)=0.0_dp,grad(1:ndim,1:nvar)=0.0_dp
+     real(kind=dp) :: prim(1:npvar)=0.0_dp,grad(1:ndim,1:ngrad)=0.0_dp
      integer(kind=i4):: bc,flag,nv2c
      !integer(kind=i4),dimension(:),pointer::v2c
      !real(kind=dp),dimension(:),pointer::wt
@@ -22,11 +22,10 @@ type faces
      integer(kind=i4):: out=-1
      integer(kind=i4):: bc
      integer(kind=i4):: flag
-     real(kind=dp)   :: grad(1:ndim,1:nvar)=0.0_dp
-     real(kind=dp)   :: tgrad(1:ndim)=0.0_dp
+     real(kind=dp)   :: grad(1:ndim,1:ngrad)=0.0_dp
      real(kind=dp)   :: sx,sy,cov,la
      real(kind=dp)   :: cen(1:ndim)=0.0_dp ! face center
-     real(kind=dp)   :: qp(1:nvar)=0.0_dp
+     real(kind=dp)   :: qp(1:npvar)=0.0_dp  ! face average of primitive variables
 end type faces
 
 type cells
@@ -34,9 +33,9 @@ type cells
      real(kind=dp)   :: cen(1:ndim)=0.0_dp,cv,cov,phi(1:nvar),ds
      real(kind=dp)   :: dx,dy,dt,la,ls
      real(kind=dp)   :: r11,r12,r22,det
-     real(kind=dp)   :: qp(1:nvar)=0.0_dp,qc(1:nvar)=0.0_dp,qold(1:nvar)=0.0_dp,res(1:nvar)=0.0_dp
+     real(kind=dp)   :: qp(1:npvar)=0.0_dp,qc(1:nvar)=0.0_dp,qold(1:nvar)=0.0_dp,res(1:nvar)=0.0_dp
      real(kind=dp)   :: DUmax(1:nvar)=0.0_dp,DUmin(1:nvar)=0.0_dp
-     real(kind=dp)   :: grad(1:ndim,1:nvar)=0.0_dp
+     real(kind=dp)   :: grad(1:ndim,1:ngrad)=0.0_dp
      real(kind=dp)   :: mul,mut
      !integer(kind=i4),dimension(:),pointer::c2v
      !integer(kind=i4),dimension(:),pointer::c2f
@@ -45,6 +44,14 @@ type cells
      integer(kind=i4),dimension(:),allocatable::c2f
      integer(kind=i4),dimension(:),allocatable::c2c
 end type cells
+
+type ghostcells
+     integer(kind=i4):: bc
+     real(kind=dp)   :: cen(1:ndim)=0.0_dp
+     real(kind=dp)   :: qp(1:npvar)=0.0_dp,qc(1:nvar)=0.0_dp
+endtype ghostcells
+
+
 
 type solution
      ! conserved variables
@@ -69,6 +76,7 @@ type(points),allocatable,dimension(:,:)::mesh
 type(faces),allocatable,dimension(:)::fc
 type(faces),allocatable,dimension(:)::bfc
 type(cells),allocatable,dimension(:)::cell
+type(ghostcells),allocatable,dimension(:)::gcell
 
 end module grid
 

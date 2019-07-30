@@ -923,7 +923,7 @@ integer(kind=i4),allocatable:: oldnum(:), newnum(:)
 type(cells),allocatable,dimension(:)::elmn
 type(faces),allocatable,dimension(:)::fac
 
-!do i=1,noc_bc
+!do i=1,noc
 !   write(46,*)'old',i,(cell(i)%c2c(j),j=1,cell(i)%nc2c)
 !enddo
 
@@ -931,10 +931,10 @@ type(faces),allocatable,dimension(:)::fac
 !allocate(elmn(noc))
 
 
-allocate(oldnum(noc_bc),newnum(noc_bc))
-allocate(elmn(noc_bc))
+allocate(oldnum(noc),newnum(noc))
+allocate(elmn(noc))
 
-do i=1,noc_bc
+do i=1,noc
    oldnum(i) = 0
    newnum(i) = 0
 enddo
@@ -980,7 +980,7 @@ oldnum(1)=c
 newnum(1)=c
 !print*,'minloc x=',c
 
-do i=1,noc_bc
+do i=1,noc
    it=oldnum(i)
    if(it .eq. 0)then
       print*,'renumber: Fatal error. it is zero for i=',i
@@ -1002,10 +1002,10 @@ do i=1,noc_bc
 enddo
 
 !print*,'here'
-if(noc_bc.ne. c)then
+if(noc.ne. c)then
   print*,'renumber: count does not match no. of cells.'
-  print*,noc_bc,noc,noc_bc-noc
-  print*,c,noc_bc-c
+  print*,noc,noc,noc-noc
+  print*,c,noc-c
   print*,'          Possible bug'
   stop
 endif

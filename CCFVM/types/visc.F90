@@ -6,7 +6,8 @@ implicit none
 ! Rey = Reynolds number
 ! SCONST = Constant in Sutherland Law
 character(len=24)  :: flow_type,grad_type
-real(kind=dp) :: Rey, prandtl, prandtl_turb, SCONST
+real(kind=dp) :: Rey, SCONST
+real(kind=dp), parameter:: prandtl=0.72_dp, prandtl_turb=0.9_dp
 
 ! Parameters in Spallart-Allmaras model
 real(kind=dp) :: Cb1, Cb2, sigma_sa, kolm, Cw1, Cw2, Cw3, Cv1,  &

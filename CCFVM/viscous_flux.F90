@@ -6,14 +6,17 @@ use grid
 implicit none
 !!------------------------------------------------------------------------------
 integer(kind=i4):: ie,in,out
-real(kind=dp):: two_third,two
-real(kind=dp):: uvel,vvel 
+real(kind=dp):: two_third,two,MubyRey
+real(kind=dp):: uvel,vvel,temprature 
+real(kind=dp):: ux,uy,vx,vy,tx,ty,qx,qy 
 real(kind=dp):: Tauxx,Tauxy,tauyy,mu
-real(kind=dp):: flux(nvar)
+real(kind=dp):: flux(nvar),Pr
+real(kind=dp):: nx,ny,area,factor
 
-return
 
-call Gradient_GG_FC
+!return
+
+if(trim(grad_type)/='ggfc') call Gradient_GG_FC
 call sutherland
 
 two_third=2.0_dp/3.0_dp
@@ -21,22 +24,47 @@ two=2.0_dp
 flux=0.0_dp
 
 do ie=startFC,endFC
+!do ie=1,nof
+   nx = fc(ie)%sx
+   ny = fc(ie)%sy
+   area = dsqrt(nx*nx + ny*ny)
+   nx = nx/area
+   ny = ny/area
    in = fc(ie)%in
    out= fc(ie)%out
-   mu=0.5_dp*(cell(in)%mul+cell(out)%mul)
+   if(out>0) then 
+      mu=0.5_dp*(cell(in)%mul+cell(out)%mul)
+   else
+      mu=cell(in)%mul
+   endif
+ 
    uvel=fc(ie)%qp(2) 
    vvel=fc(ie)%qp(3) 
+   temprature=fc(ie)%qp(5) 
+   ux=fc(ie)%grad(1,2)
+   uy=fc(ie)%grad(2,2)
+   vx=fc(ie)%grad(1,3)
+   vy=fc(ie)%grad(2,3)
+   tx=fc(ie)%grad(1,5)
+   ty=fc(ie)%grad(2,5)
+   MubyRey=mu/Rey
 
-   Tauxx=mu*two_third*(two*fc(ie)%grad(1,2)-fc(ie)%grad(2,3))/Rey
-   Tauxy=mu*(fc(ie)%grad(2,2)+fc(ie)%grad(1,3))/Rey
-   Tauyy=mu*two_third*(two*fc(ie)%grad(2,3)-fc(ie)%grad(1,2))/Rey
+   Tauxx=MubyRey*two_third*(two*ux-vy)
+   Tauxy=MubyRey*(uy+vx)
+   Tauyy=MubyRey*two_third*(two*vy-ux)
+    
+   Pr=prandtl
+   factor=(gamma-1.0_dp)*m_inf*m_inf*Pr 
+   qx=-tx/factor
+   qy=-ty/factor
 
-   flux(1)=uvel*tauxx+vvel*tauxy  
-   flux(3)=uvel*tauxx+vvel*tauxy  
-   flux(4)=uvel*tauxy+vvel*tauyy  
+   flux(1)=  (uvel*tauxx+vvel*tauxy-qx)*nx &
+          & -(uvel*tauxy+vvel*tauyy-qy)*ny 
+   flux(3)=tauxx*nx+tauxy*ny  
+   flux(4)=tauxy*nx+tauyy*ny  
 
-   !cell(in)%res(i)=cell(in)%res(i)+flux*area
-   !cell(out)%res(i)=cell(out)%res(i)-flux*area
+   cell(in)%res(:)=cell(in)%res(:)+flux(:)*area
+   if(out>0) cell(out)%res(:)=cell(out)%res(:)-flux(:)*area
 enddo
 
 

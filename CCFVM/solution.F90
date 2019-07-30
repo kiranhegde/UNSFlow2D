@@ -5,10 +5,10 @@ subroutine math
 use param
 implicit none
 
-GAMMA        = 1.4d0
-GAMMA1       = GAMMA-1.0d0
-GAS_CONST    = 287.0d0
-PI         = 4.0d0*datan(1.0d0)
+GAMMA        = 1.4_dp
+GAMMA1       = GAMMA-1.0_dp
+GAS_CONST    = 287.0_dp
+PI         = 4.0_dp*datan(1.0_dp)
 
 end
 !-----------------------------------------------------------------------------

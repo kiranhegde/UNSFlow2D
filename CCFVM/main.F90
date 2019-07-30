@@ -61,7 +61,7 @@ do while(iter .lt. MAXITER .and. fres .gt. MINRES)
 
    do i=1,noc
       call con2prim(cell(i)%qc(1:nvar))
-      do j=1,nvar
+      do j=1,npvar
          cell(i)%qp(j)=prim(j)
       enddo
    enddo
@@ -212,6 +212,8 @@ vmin =  1.0d10
 vmax = -1.0d10
 emin =  1.0d10
 emax = -1.0d10
+tmin =  1.0d10
+tmax = -1.0d10
 do is=1,noc
     con(:)=cell(is)%qc(:)
     call con2prim(con)
@@ -230,6 +232,8 @@ do is=1,noc
     ent  =dlog10(p/rho**GAMMA/ent_inf)
     emin =dmin1(emin, ent)
     emax =dmax1(emax, ent)
+    tmin =dmin1(tmin, t)
+    tmax =dmax1(tmax, t)
 enddo
 
 !100 format(1x,i6,1x,4(f15.6,1x))
@@ -250,10 +254,11 @@ write(*,*)
 !write(*,*)
 write(*,'(27x,"Min",8x,"Max")')          
 write(*,'(" Density           =",2f12.6)')rmin, rmax
-write(*,'(" Pressure          =",2f12.6)')pmin, pmax
-write(*,'(" Mach number       =",2f12.6)')mmin, mmax
 write(*,'(" x velocity        =",2f12.6)')umin, umax
 write(*,'(" y velocity        =",2f12.6)')vmin, vmax
+write(*,'(" Pressure          =",2f12.6)')pmin, pmax
+write(*,'(" Temparature       =",2f12.6)')tmin, tmax
+write(*,'(" Mach number       =",2f12.6)')mmin, mmax
 write(*,'(" Entropy           =",2f12.6)')emin, emax
 write(*,*)
 write(*,*)
@@ -328,7 +333,7 @@ use grid
 implicit none
 integer(kind=i4) :: i,j,funit
 real(kind=dp) :: q2, mach,entropy
-real(kind=dp) :: ro,uo,vo,po
+real(kind=dp) :: ro,uo,vo,po,to,Vmag
 character(len=15) :: ctype
 
 if(maxval(cell(:)%nc2f) == 3) ctype="TRIANGLE"
@@ -341,7 +346,7 @@ OPEN(funit,file='tecplt.dat')
 WRITE(funit,*) 'TITLE = "flo2d output" '
 
 !WRITE(funit,*) 'VARIABLES="X","Y","rho","u","v","p" '
-WRITE(funit,*) 'VARIABLES="X","Y","density","u-velocity","v-velocity","Pressure","Mach","Entropy" '
+WRITE(funit,*) 'VARIABLES="X","Y","density","u-velocity","v-velocity","Velocity","Pressure","Temprature","Mach","Entropy" '
 !WRITE(funit,*) 'ZONE F=FEPOINT,ET=quadrilateral'
 WRITE(funit,*) 'ZONE F=FEPOINT,ET=',trim(ctype)
 WRITE(funit,*) 'N=',nop,',E=',noc
@@ -351,13 +356,15 @@ do i=1,nop
     uo=pt(i)%prim(2)
     vo=pt(i)%prim(3)
     po=pt(i)%prim(4)
+    to=pt(i)%prim(5)
+    Vmag=dsqrt(uo*uo+vo*vo)
 
     q2   = uo**2 + vo**2
     mach = dsqrt(q2*ro/(GAMMA*po))
     entropy=log10(po/ro**GAMMA/ent_inf)
 
     !WRITE(funit,*)pt(i)%x,pt(i)%y,r,u,v,p,mach
-    WRITE(funit,100)pt(i)%x,pt(i)%y,ro,uo,vo,po,mach,entropy
+    WRITE(funit,100)pt(i)%x,pt(i)%y,ro,uo,vo,Vmag,po,to,mach,entropy
       
 END DO
 DO i=1,noc

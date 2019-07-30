@@ -4,7 +4,7 @@ use pri
 use commons
 implicit none
 integer(kind=i4) :: i,j,c,k,p1,p2
-real(kind=dp) :: con(nvar)
+real(kind=dp) :: con(npvar)
 real(kind=dp) :: wt,cwt
 
 do i=1,nop
@@ -16,11 +16,11 @@ do i=1,nop
        !cwt=1.d0/cell(c)%cv
        cwt=pt(i)%wt(j)
        wt=wt+cwt
-       do k=1,nvar
+       do k=1,npvar
           con(k)=con(k)+cell(c)%qp(k)*cwt 
        enddo
     enddo
-    do k=1,nvar
+    do k=1,npvar
        pt(i)%prim(k)=con(k)/wt    
     enddo
 end do
@@ -42,7 +42,7 @@ use pri
 use commons
 implicit none
 integer(kind=i4) :: i,j,k,c
-real(kind=dp) :: grad(ndim,nvar)
+real(kind=dp) :: grad(ndim,ngrad)
 real(kind=dp) :: wt,cwt
 
 grad=0.0_dp
@@ -56,11 +56,11 @@ do i=1,nop
        !cwt=1.d0/cell(c)%cv
        cwt=pt(i)%wt(j)
        wt=wt+cwt
-       do k=1,nvar
+       do k=1,ngrad
           grad(1:ndim,k)=grad(1:ndim,k)+cell(c)%grad(1:ndim,k)*cwt 
        enddo
     enddo
-    pt(i)%grad(1:ndim,1:nvar)=grad(1:ndim,1:nvar)/wt    
+    pt(i)%grad(1:ndim,1:ngrad)=grad(1:ndim,1:ngrad)/wt    
 
 end do
 

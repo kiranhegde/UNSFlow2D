@@ -117,12 +117,16 @@ end
 subroutine read_grid
 use data_type,only:i4
 !use param
-use grid,only:cells,fc,pt,cell,nop,noc,nof,noc_bc,nbf,startBC,endBC,startfc,endfc
+use grid,only:cells,fc,pt,cell,gcell,nop,noc,nof,nogc,nbf,startBC,endBC,startfc,endfc
+use tools
 implicit none
 
-integer(kind=i4) :: i,j
+integer(kind=i4) :: i,j,p1,p2,in
 integer(kind=i4) :: ghostcell
-type(cells),allocatable,dimension(:)::elm
+type (vector) :: a
+type (coord)  :: p,px
+
+!type(cells),allocatable,dimension(:)::elm
 
 open(3,file='geometry.inp')
 read(3,*)nop,noc,nof,nbf
@@ -139,12 +143,12 @@ endBC=nof+nbf
 ! total no. of face
 nof=nof+nbf
 
-allocate(pt(nop),fc(nof),elm(noc))
+allocate(pt(nop),fc(nof),cell(noc))
 do i=1,nop
  read(3,*)j,pt(i)%x,pt(i)%y,pt(i)%bc
 enddo
 do i=1,noc
- read(3,*)j,elm(i)%cen(1),elm(i)%cen(2),elm(i)%cv
+ read(3,*)j,cell(i)%cen(1),cell(i)%cen(2),cell(i)%cv
 enddo
 do i=startFC,endFC
  read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%out,fc(i)%sx,fc(i)%sy,fc(i)%bc
@@ -154,31 +158,40 @@ do i=startBC,endBC
 enddo
 close(3)
 
-ghostcell=0
-noc_bc=noc
+ghostcell=1
 if(ghostcell==1) then
-do i=1,nof
-   if(fc(i)%in==0) then 
-     noc_bc=noc_bc+1
-     fc(i)%in=noc_bc
-   elseif(fc(i)%out==0) then 
-     noc_bc=noc_bc+1
-     fc(i)%out=noc_bc
-   endif  
-enddo
+  nogc=nbf
+  allocate(gcell(nogc))
+  j=0
+  do i=startBC,endBC
+     j=j+1
+     in=fc(i)%in
+     if(fc(i)%out<0) then
+       gcell(j)%bc=fc(i)%bc 
+       !fc(i)%out=-j
+       p1=fc(i)%pt(1)
+       p2=fc(i)%pt(2)
+       a%s%x=pt(p1)%x
+       a%s%y=pt(p1)%y
+       a%e%x=pt(p2)%x
+       a%e%y=pt(p2)%y
+       p%x=cell(in)%cen(1)
+       p%y=cell(in)%cen(2)
+       px%x=0.0_dp
+       px%y=0.0_dp
+       call pt2linemirror(p,a,px)  
+       write(45,*)px%x,px%y
+     else
+       print*,'Ghostcell : check BC code'
+       print*,fc(i)%out,'should be -ve number...'
+       stop  
+     endif
+  enddo
 endif
 
-allocate(cell(noc_bc))
-do i=1,noc
-   cell(i)%cen(1)=elm(i)%cen(1) 
-   cell(i)%cen(2)=elm(i)%cen(2) 
-   cell(i)%cv    =elm(i)%cv 
-enddo
-
-deallocate(elm)
 
 
-write(*,'( "Number of Ghost cells =",i10)')noc_bc-noc
+write(*,'( "Number of Ghost cells =",i10)')nogc
 
 write(*,'(" Bounding box:")')
 write(*,'(10x, "xmin =", f18.3)') minval(pt(:)%x) 

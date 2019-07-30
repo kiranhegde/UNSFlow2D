@@ -151,8 +151,8 @@ enddo
 
 do i=1,noc
    phi(:,i)=cell(i)%phi(:)
-   umax(:,i)=cell(i)%qp(:)
-   umin(:,i)=cell(i)%qp(:)
+   umax(:,i)=cell(i)%qp(1:nvar)
+   umin(:,i)=cell(i)%qp(1:nvar)
 enddo
 
 !phi=1.0_dp
@@ -273,7 +273,7 @@ enddo
 do i=1,noc
    do j=1,nvar 
       cell(i)%phi(j)=phi(j,i)
-      cell(i)%grad(1:ndim,j)=cell(i)%grad(1:ndim,j)*cell(i)%phi(j)
+      !cell(i)%grad(1:ndim,j)=cell(i)%grad(1:ndim,j)*cell(i)%phi(j)
       !cell(i)%grad(1:ndim,j)=cell(i)%grad(1:ndim,j)*phi(j,i)
    enddo
 enddo

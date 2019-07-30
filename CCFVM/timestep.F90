@@ -67,7 +67,7 @@ use grid
 implicit none
 integer(kind=i4) :: i,j,in,out
 real(kind=dp)    :: r0, u0, v0, p0, a0, nx, ny,un,nl,ll
-real(kind=dp)    :: con(nvar),prim1(nvar),prim2(nvar)
+real(kind=dp)    :: con(nvar),prim1(npvar),prim2(npvar)
 
 do i=1,noc
 cell(i)%la=0.d0

@@ -5,7 +5,7 @@ use inf
 implicit none
 
 real(kind=dp):: rho,u,v,e,q,p,h,a,t,znd
-real(kind=dp):: prim(nvar)
+real(kind=dp):: prim(npvar)
 real(kind=dp):: conv(nvar)
 
 contains
@@ -33,6 +33,7 @@ prim(1)=rho
 prim(2)=u
 prim(3)=v
 prim(4)=p
+prim(5)=t
 end subroutine con2prim
 
 subroutine prim2con(prim)

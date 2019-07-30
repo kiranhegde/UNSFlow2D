@@ -31,7 +31,7 @@ integer(kind=i4)  :: niso
 ! pmin,pmax = pressure
 ! mmin,mmax = mach number
 real(kind=dp) :: rmin, rmax, umin, umax, vmin, vmax, pmin, pmax, &
-            mmin, mmax, emin, emax, nmin, nmax
+            mmin, mmax, emin, emax, nmin, nmax,tmax,tmin
 
 real(kind=dp) :: fres, fres_old, fres1, fresi
 integer(kind=i4)  :: iresi
