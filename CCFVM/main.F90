@@ -220,7 +220,11 @@ enddo
 
 !100 format(1x,i6,1x,4(f15.6,1x))
 write(*,9)('-',i=1,75)
-write(*,10)m_inf,aoa_deg,Rey,CFL
+if (flow_type=="inviscid") then
+    write(*,10)m_inf,aoa_deg,CFL
+else
+   write(*,13)m_inf,aoa_deg,CFL,Rey
+endif
 write(*,11)irs,ilimit, trim(grad_type), trim(gridfile)
 write(*,12)trim(timemode),trim(flow_type),trim(flux_type)
 write(*,9)('-',i=1,75)
@@ -245,9 +249,10 @@ write(*,*)
 !write(*,*)
 !write(*,*)
 9     format(75a)
-10    format(' Mach =',f6.3,'    AOA =',f6.2, '  Rey = ',f9.2,'   CFL = ',f12.2)
+10    format(' Mach =',f6.3,'    AOA =',f6.2, '   CFL = ',f12.2)
 11    format(' CIRS = ',i2,2x,'  Limiter = ',i2,2x,' Gradient :',a5,2x,'Grid :',a15)
 12    format(' TimeMode :',a5,2x,'FlowType :',a12,2x,' FluxScheme :',a7)
+13    format(' Mach =',f6.3,'    AOA =',f6.2,'   CFL = ',f12.2,'  Rey = ',ES12.3)
 flush(6)
 
 end
