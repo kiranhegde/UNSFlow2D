@@ -4,7 +4,8 @@ use pri
 use commons
 implicit none
 integer(kind=i4) :: i,j,c,k,p1,p2
-real(kind=dp) :: con(npvar)
+real(kind=dp) :: con(npvar+1)
+!real(kind=dp) :: con(npvar)
 real(kind=dp) :: wt,cwt
 
 do i=1,nop
@@ -19,10 +20,12 @@ do i=1,nop
        do k=1,npvar
           con(k)=con(k)+cell(c)%qp(k)*cwt 
        enddo
+          con(npvar+1)=con(npvar+1)+cell(c)%mul*cwt 
     enddo
     do k=1,npvar
        pt(i)%prim(k)=con(k)/wt    
     enddo
+       pt(i)%mu=con(npvar+1)/wt    
 end do
 
 ! face average

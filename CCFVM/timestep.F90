@@ -1,7 +1,6 @@
 !-----------------------------------------------------------------------------
-! Time-step from cfl condition: refined version
+! Time-step from cfl condition
 !-----------------------------------------------------------------------------
-!======================================================================================
 subroutine time_step2
 use param
 use pri
@@ -46,15 +45,13 @@ call spectral
 cell(:)%dt=0.d0
 dtglobal = 1.0d20
 do i=1,noc
-   call con2prim(cell(i)%qc(:))
-
-   ll  = dabs(u*cell(i)%dx+v*cell(i)%dy)+a*cell(i)%ds
+   !call con2prim(cell(i)%qc(:))
+   !ll  = dabs(u*cell(i)%dx+v*cell(i)%dy)+a*cell(i)%ds
+   ll  = cell(i)%la
    cell(i)%dt  = cfl*cell(i)%cv/ll          ! local  timestep
    dtglobal = dmin1(dtglobal, cell(i)%dt)   ! global timestep
-   if(cell(i)%dt<=0.0) print*,i,cell(i)%dt
+   !if(cell(i)%dt<=0.0) print*,i,cell(i)%dt
 enddo
-
-
 
 end
 !======================================================================================
@@ -62,60 +59,44 @@ end
 subroutine spectral 
 use param
 use pri
+use visc
 use grid
 !use commons
 implicit none
-integer(kind=i4) :: i,j,in,out
-real(kind=dp)    :: r0, u0, v0, p0, a0, nx, ny,un,nl,ll
-real(kind=dp)    :: con(nvar),prim1(npvar),prim2(npvar)
+integer(kind=i4) :: ie,in,out
+real(kind=dp)    :: r0, u0, v0, p0, a0, nx, ny,un,nl,ll,vll,mu
+real(kind=dp)    :: con(nvar),Kv
 
-do i=1,noc
-cell(i)%la=0.d0
+do ie=1,noc
+cell(ie)%la=0.d0
 enddo
 
-do i=1,nof
+Kv=0.25_dp
+vll=0.0_dp
+! if viscous ...
+if(flow_type /= 'inviscid') vll = 2.0_dp*gamma/(prandtl*Rey*Kv)
 
-   in=fc(i)%in
-   out=fc(i)%out
-   nx  = fc(i)%sx
-   ny  = fc(i)%sy
+do ie=1,nof
+   in=fc(ie)%in
+   out=fc(ie)%out
+   nx  = fc(ie)%sx
+   ny  = fc(ie)%sy
    nl  = dsqrt(nx*nx + ny*ny)
-    
-   if(in>0.and.out>0) then
-      call con2prim(cell(in)%qc(:))
-      prim1(:)=prim(:)
-      call con2prim(cell(out)%qc(:))
-      prim2(:)=prim(:)
-      do j=1,nvar
-         con(j) = 0.5d0*(prim1(j)+prim2(j))
-      enddo
-
-      r0   = con(1)
-      u0   = con(2)
-      v0   = con(3)
-      p0   = con(4)
-      a0   = dsqrt(gamma*p0/r0)
-      un  = u0*nx + v0*ny
-      ll  = dabs(un) + a0*nl
-      cell(in)%la=cell(in)%la+ll
-      cell(out)%la=cell(out)%la+ll
-      fc(i)%la=ll
-   elseif(in>0.and.out<0) then
-      con(:)=cell(in)%qc(:)
-      call con2prim(con)
-      un  = u*nx + v*ny
-      ll  = dabs(un) + a*nl
-      cell(in)%la=cell(in)%la+ll
-      fc(i)%la=ll
-!   elseif(in==0.and.out/=0) then
-!      con(:)=cell(out)%qc(:)
-!      call con2prim(con)
-!      un  = u*nx + v*ny
-!      ll  = dabs(un) + a*nl
-!      cell(out)%la=cell(out)%la+ll
-!      fc(i)%la=ll
-   endif
-
+   mu  = fc(ie)%mu
+   con(1:4)=fc(ie)%qp(1:4)
+   r0   = con(1)
+   u0   = con(2)
+   v0   = con(3)
+   p0   = con(4)
+   a0   = dsqrt(gamma*p0/r0)
+   un  = u0*nx + v0*ny
+   ! inviscid spectral radius
+   ll  = dabs(un) + a0*nl
+   ! adding viscous spectral radius
+   ll = ll + vll*mu/r0
+   fc(ie)%la=ll
+   cell(in)%la=cell(in)%la+ll
+   if(out<=noc) cell(out)%la=cell(out)%la+ll
 enddo
 
 

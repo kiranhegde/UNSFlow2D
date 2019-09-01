@@ -1,4 +1,5 @@
 module data_type
+USE,INTRINSIC:: ISO_FORTRAN_ENV
 implicit none
 !integer, parameter :: dp = kind(1.0d0)
 integer, parameter :: i1=selected_int_kind(2)

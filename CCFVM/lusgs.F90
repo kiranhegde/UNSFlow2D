@@ -53,7 +53,7 @@ do it=1,noc
       endif
       ds = dsqrt(sx*sx + sy*sy)
 
-      if(out .lt. it .and. out .gt. 0)then
+      if(out .lt. it .and. out .gt. 0.and.out<=noc)then
          call normal_flux(dflux,fvm(out)%lower(1:nvar),out)
          !call maxeig(cell(out)%qc(1:nvar), lam)
          lam=fc(c)%la     
@@ -85,7 +85,7 @@ do it=noc,1,-1
       endif
       ds = dsqrt(sx*sx + sy*sy)
 
-      if(out .gt. it .and. out .gt. 0)then
+      if(out .gt. it .and. out .gt. 0.and.out<=noc)then
          call normal_flux(dflux,fvm(out)%upper(1:nvar),out)
          !call maxeig(cell(out)%qc(1:nvar), lam)
          lam=fc(c)%la     

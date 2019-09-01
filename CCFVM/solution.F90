@@ -21,30 +21,32 @@ use grid
 implicit none
 integer(kind=i4)  :: i,j
 
-q_inf = 1.d0
+q_inf   = 1.d0
 aoa     = aoa_deg*PI/180.0d0
 qinf(2) = 1.d0
 qinf(3) = dcos(aoa)*q_inf
 qinf(4) = dsin(aoa)*q_inf
-p_inf    = 1.d0/(gamma*m_inf*m_inf)
+p_inf   = 1.d0/(gamma*m_inf*m_inf)
 qinf(1) = p_inf/(gamma-1.d0) + 0.5d0
-r_inf = qinf(2)
+r_inf   = qinf(2)
 ent_inf = p_inf/(r_inf**gamma)
 a_inf   = dsqrt(gamma*p_inf/r_inf)
 
 u_inf=qinf(3)/qinf(2)
 v_inf=qinf(4)/qinf(2)
-
+T_inf=gamma*m_inf*m_inf*p_inf/(r_inf)
+!print*,'T_inf', T_inf
+!stop
 !Required by Sutherland law
-T_infd  = 300.0d0
-SCONST  = 110.4d0*T_inf/T_infd
+T_infd  = 300.0_dp
+SCONST  = 110.4_dp
+t_wall=t_wall/t_infd
+
 
 fs_inf(1)=r_inf
 fs_inf(2)=u_inf
 fs_inf(3)=v_inf
 fs_inf(4)=p_inf
-
-
 
 !     Print some useful info
 print*
@@ -56,6 +58,8 @@ print*
 if(flow_type == 'inviscid') print*,'Euler computation'
 if(flow_type == 'laminar')  print*,'Laminar Navier-Stokes computation'
 if(flow_type == 'rans')print*,'Turbulent Navier-Stokes computation'
+if(flow_type /= 'inviscid'.and.iwall==0) print*,'Isothermal wall BC'
+if(flow_type /= 'inviscid'.and.iwall==1) print*,'Adiabatic  wall BC'
 if(grad_type == 'gg')print*,'Gradient Computation method : Green-Gauss'
 if(grad_type == 'ggfc')print*,'Gradient Computation method : Diamond Path reconstruction method (Green-Gauss)'
 if(grad_type == 'lsqr')print*,'Gradient Computation method : Least square Method'
@@ -71,7 +75,7 @@ write(*,'(5x, " v velocity  =", f8.4)')v_inf
 write(*,'(5x, " Pressure    =", f15.6)')p_inf
 write(*,9)('-',i=1,75)
 
-do j=1,noc
+do j=1,size(cell)
    cell(j)%qc(:) = qinf(:)
    cell(j)%phi(:) = 1.0_dp 
 enddo

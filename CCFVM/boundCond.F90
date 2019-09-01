@@ -1,4 +1,86 @@
-subroutine slip_wall(ie,qcl,qcr)
+! No Slip Wall BC
+subroutine NoSlip_wall(ie)
+use commons
+use pri
+use grid
+implicit none
+integer(kind=i4):: ie,in,out
+!real(kind=dp) :: ds,nx,ny,uni,tg,pvar(nvar),rhog
+real(kind=dp) :: tg,rhog
+!real(kind=dp) :: qcl(nvar), qcr(nvar)
+
+in  = fc(ie)%in
+out = fc(ie)%out
+if(out<noc) print*,out,'s'
+
+call con2prim(cell(in)%qc(1:nvar))
+
+! setting up Ghost state
+if(iwall==0) then 
+  ! Isothermal wall BC
+  tg=2.0_dp*t_wall-t 
+  if(tg<=0.0_dp) tg=0.01_dp*t_wall
+  rhog=p/(rho*znd) 
+  cell(out)%qp(1)=rhog
+  cell(out)%qp(2)=-u
+  cell(out)%qp(3)=-v
+  cell(out)%qp(4)=p
+  cell(out)%qp(5)=tg
+  call prim2con(cell(out)%qp(1:nvar)) 
+  cell(out)%qc(:)=conv(:)
+elseif(iwall==1) then 
+  ! Adiabatic wall  BC
+  cell(out)%qc(1:2)=cell(in)%qc(1:2)
+  cell(out)%qc(3)=-cell(in)%qc(3)
+  cell(out)%qc(4)=-cell(in)%qc(4)
+  call con2prim(cell(out)%qc(1:nvar))
+  cell(out)%qp(:)=prim(:)
+else
+    Stop 'Unknown no-slip wall BC'
+endif
+   
+
+end  subroutine   NoSlip_wall
+!============================================================================
+! Slip Wall BC
+subroutine slip_wall(ie)
+use commons
+use pri
+use grid
+implicit none
+integer(kind=i4):: ie,in,out
+real(kind=dp) :: ds,nx,ny,un
+!real(kind=dp) :: qcl(nvar), qcr(nvar)
+
+in  = fc(ie)%in
+out = fc(ie)%out
+if(out<noc) print*,out,'s'
+nx=fc(ie)%sx
+ny=fc(ie)%sy
+ds=dsqrt(nx*nx+ny*ny)
+nx=nx/ds
+ny=ny/ds
+
+call con2prim(cell(in)%qc(1:nvar))
+un=u*nx+v*ny
+
+cell(out)%qc(1:2)=cell(in)%qc(1:2)
+! Weak-Riemann : By setting ghost normal velocity to zero
+!qcl(2)=qcl(2)-un*nx
+!qcl(3)=qcl(3)-un*ny
+!qcr=qcl
+
+! Weak-Riemann : By setting same tangential component in ghost as in the  interior
+! V_ = Vin-2(Vin.n)*n
+cell(out)%qc(3)=rho*u-2.0_dp*un*nx
+cell(out)%qc(4)=rho*v-2.0_dp*un*ny
+
+call con2prim(cell(out)%qc(1:nvar))
+cell(out)%qp(:)=prim(:)
+
+end  subroutine  slip_wall
+!============================================================================
+subroutine slip_wall1(ie,qcl,qcr)
 use commons
 !use pri
 use grid
@@ -26,7 +108,7 @@ qcr(2)=(qcl(2)*qcl(1)-2.0_dp*un*nx)/qcl(1)
 qcr(3)=(qcl(3)*qcl(1)-2.0_dp*un*ny)/qcl(1)
 
 end
-
+! ============================================================================
 subroutine farfield_flux(ie,qcl,qcr)
 use grid
 use pri

@@ -5,10 +5,12 @@ subroutine fvresidual
 use commons
 use grid 
 use param
+use inf
+use pri
 implicit none
-integer(kind=i4) :: i, j, ie, in, out
+integer(kind=i4) :: i, j, ie, in, out,key
 real(kind=dp)    :: qcl(nvar), qcr(nvar),flux(nvar),phi
-real(kind=dp)    :: distl(ndim)!,distr(ndim) 
+real(kind=dp)    :: distl(ndim)!,distr(ndim)
 
 phi=1.0_dp
 do i=1,noc
@@ -17,38 +19,109 @@ do i=1,noc
    enddo
 enddo
 
+key=0
 ! Compute flux for boundary edges
 do ie=startBC,endBC
    qcl=0.d0
    qcr=0.d0
    distl=0.0_dp
    in = fc(ie)%in
-   distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
+   out = fc(ie)%out
+
+   ! Farfield
+   !if(fc(ie)%bc==2001.and.in>0) then  
+   if(fc(ie)%bc==2001) then  
+      if(key==0) then
+         distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
+         !distr(:)=fc(ie)%cen(:)-cell(out)%cen(:)
+         do i=1,nvar
+            phi=cell(in)%phi(i)
+            qcl(i)=cell(in)%qp(i)+phi*sum(cell(in)%grad(:,i)*distl(:))
+         enddo
+         call farfield_flux(ie,qcl,qcr)
+         if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
+         cell(in)%res(:)=cell(in)%res(:)+flux(:)
+         call prim2con(qcr)  
+         cell(out)%qc(:)=conv(:)
+         call con2prim(conv)
+         cell(out)%qp(:)=prim(:)
+      else
+         call prim2con(fs_inf)  
+         cell(out)%qc(1:nvar)=conv(1:nvar) 
+         call con2prim(conv)
+         cell(out)%qp(:)=prim(:)
+      endif
+   endif
+
+   ! Slip BC on wall (Euler)
+   if(fc(ie)%bc==1001) then 
+      if(key==1) then
+         distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
+         !distr(:)=fc(ie)%cen(:)-cell(out)%cen(:)
+         do i=1,nvar
+            phi=cell(in)%phi(i)
+            qcl(i)=cell(in)%qp(i)+phi*sum(cell(in)%grad(:,i)*distl(:))
+         enddo
+         call slip_wall1(ie,qcl,qcr)
+         if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
+         cell(in)%res(:)=cell(in)%res(:)+flux(:)
+      else 
+         distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
+         !distr(:)=fc(ie)%cen(:)-cell(out)%cen(:)
+         do i=1,nvar
+            phi=cell(in)%phi(i)
+            qcl(i)=cell(in)%qp(i)+phi*sum(cell(in)%grad(:,i)*distl(:))
+         enddo
+
+         ! Defining Ghost cell state 
+         if (flow_type/="inviscid") then
+             call NoSlip_wall(ie)   
+         else
+             call slip_wall(ie)
+         endif
+         qcr(1:nvar)=cell(out)%qp(1:nvar)   
+
+         if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+         if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
+         cell(in)%res(:)=cell(in)%res(:)+flux(:)
+      endif  
+   endif
+
+
+   !distl(:)=fc(ie)%cen(:)-cell(in)%cen(:)
    !distr(:)=fc(ie)%cen(:)-cell(out)%cen(:)
 
-   do i=1,nvar
-      phi=cell(in)%phi(i)
-      qcl(i)=cell(in)%qp(i)+phi*sum(cell(in)%grad(:,i)*distl(:))
-   enddo  
-
-   if(fc(ie)%bc==2001.and.in>0) then  
-      call farfield_flux(ie,qcl,qcr)
-      !qcr=fs_inf
-      if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
-      if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
-      if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
-      if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
-      cell(in)%res(:)=cell(in)%res(:)+flux(:)
-   endif
-   ! Slip BC on wall (Euler)
-   if(fc(ie)%bc==1001.and.in>0) then 
-      call slip_wall(ie,qcl,qcr)
-      if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
-      if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
-      if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
-      if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
-      cell(in)%res(:)=cell(in)%res(:)+flux(:)
-   endif
+!   do i=1,nvar
+!      phi=cell(in)%phi(i)
+!      qcl(i)=cell(in)%qp(i)+phi*sum(cell(in)%grad(:,i)*distl(:))
+!   enddo  
+!
+!   if(fc(ie)%bc==2001.and.in>0) then  
+!      call farfield_flux(ie,qcl,qcr)
+!      !qcr=fs_inf
+!      if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
+!      if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
+!      if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+!      if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
+!      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+!   endif
+!   ! Slip BC on wall (Euler)
+!   if(fc(ie)%bc==1001.and.in>0) then 
+!      call slip_wall(ie,qcl,qcr)
+!      if (flux_type == 'ausm')    call ausmPlus_flux(ie,qcl,qcr,flux)
+!      if (flux_type == 'roe')     call roe_flux(ie,qcl,qcr,flux)
+!      if (flux_type == 'vanleer') call vanleer_flux(ie,qcl,qcr,flux)
+!      if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
+!      cell(in)%res(:)=cell(in)%res(:)+flux(:)
+!   endif
 enddo
 
 
@@ -64,6 +137,7 @@ if (flux_type == 'vanleer') then
    enddo
 elseif (flux_type == 'roe') then
    do ie=startFC,endFC
+   !do ie=1,nof
       in = fc(ie)%in
       out = fc(ie)%out
       call recon(ie,in,out,qcl,qcr)
@@ -92,20 +166,18 @@ elseif (flux_type == 'rusanov') then
 endif
 
 
-! central implicit residual smoothening iterations
-if (irs==yes) call cirs
-
-return
-
 if (flow_type=="laminar") then
-    call viscous_flux
+   !do ie=startBC,endBC
+   !   call NoSlip_wall(ie)   
+   !enddo 
+   call viscous_flux
 elseif (flow_type=="turbulent") then
     call viscous_flux
     call rans
-else
-   print*,'Unknown flow type:',flow_type
-   stop
 endif
+
+! central implicit residual smoothening iterations
+if (irs==yes) call cirs
 
 end
 
@@ -122,8 +194,8 @@ real(kind=dp)    :: zhi,beta,alfa,phi
 
 !zhi=0.0_dp       ! 
 !zhi=-1.0_dp      ! 2nd order fully upwind
-!zhi=1.0_dp/3.0_dp ! 3rd order fully upwind
-zhi=2.0_dp/3.0_dp ! 3rd order fully upwind
+zhi=1.0_dp/3.0_dp ! 3rd order fully upwind
+!zhi=2.0_dp/3.0_dp ! 3rd order fully upwind
 phi=1.0_dp
 
 qcl(:)=0.d0

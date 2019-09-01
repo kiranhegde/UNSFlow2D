@@ -1,18 +1,18 @@
 Start     1
-FlowType  inviscid
-Mach      0.8
-AOA       1.25
-Reynolds  5000.0
-CFL       tanh  1000  1500
+FlowType  laminar  0 300
+Mach      0.85
+AOA       0.00
+Reynolds  500 
+CFL       ramp  0.1  1000.0 1500
 Timemode  lusgs 
-GradType  gg
+GradType  ggfc
 LastIter  0
 MaxIter   10000
-MinRes    1.0e-12
+MinRes    1.0e-10
 SaveInt   1000
 ScrInt    100
 NoIso     30
-Flux      vanleer
+Flux      roe
 Limiter   1
 irs       1
 FarBC     0  0.0  0.0

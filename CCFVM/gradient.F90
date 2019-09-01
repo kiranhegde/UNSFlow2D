@@ -4,7 +4,7 @@ use grid
 use commons
 use param,only:ilimit
 implicit none
-integer(kind=i4) :: i,k,in,out,p1,p2
+integer(kind=i4) :: i,k,in,out!,p1,p2
 real(kind=dp)    :: xn,yn,xc,yc,dx,dy,ds,var
 real(kind=dp)    :: wx0,wy0,wx1,wy1     
 real(kind=dp)    :: r11,r12,r22,alfa1,alfa2
@@ -57,10 +57,17 @@ enddo
 
 do i=startBC,endBC
    in =fc(i)%in
-   p1=fc(i)%pt(1)
-   p2=fc(i)%pt(2)
-   dx=fc(i)%cen(1)-cell(in)%cen(1)
-   dy=fc(i)%cen(2)-cell(in)%cen(2)
+   out=fc(i)%out
+   !p1=fc(i)%pt(1)
+   !p2=fc(i)%pt(2)
+   xc=cell(in)%cen(1)
+   yc=cell(in)%cen(2)
+   xn=cell(out)%cen(1)
+   yn=cell(out)%cen(2)
+   dx=xn-xc
+   dy=yn-yc
+   !dx=fc(i)%cen(1)-cell(in)%cen(1)
+   !dy=fc(i)%cen(2)-cell(in)%cen(2)
    ds=1.0_dp/dsqrt(dx*dx+dy*dy)
    r11=cell(in)%r11
    r12=cell(in)%r12
@@ -71,7 +78,8 @@ do i=startBC,endBC
    wy0=alfa2
 
    do k=1,ngrad
-      var=0.5_dp*(pt(p1)%prim(k)+pt(p2)%prim(k))-cell(in)%qp(k)
+      !var=0.5_dp*(pt(p1)%prim(k)+pt(p2)%prim(k))-cell(in)%qp(k)
+      var=cell(out)%qp(k)-cell(in)%qp(k) 
       cell(in)%grad(1,k)=cell(in)%grad(1,k)+var*wx0
       cell(in)%grad(2,k)=cell(in)%grad(2,k)+var*wy0
    enddo
@@ -215,24 +223,43 @@ enddo
  
 ! gradient at the boundary faces and to the cells   
 do i=startBC,endBC
+   a1=0.0_dp
+   a2=0.0_dp
    in = fc(i)%in
+   out = fc(i)%out
    p1=fc(i)%pt(1)       
    p2=fc(i)%pt(2)       
 
+   ! triangular cell to the right of the edge
+   xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
+   xy(1,2)=cell(out)%cen(1) ; xy(2,2)=cell(out)%cen(2)
+   xy(1,3)=pt(p2)%x         ; xy(2,3)=pt(p2)%y
+   prim(:,1)=pt(p1)%prim(:)       
+   prim(:,2)=cell(out)%qp(:)
+   prim(:,3)=pt(p2)%prim(:)       
+   grad1=0.0_dp 
+   ! gradient to the right of cell
+   call gradtrixy(prim,xy,grad1,a1,nn)
+
+   ! triangular cell to the left  of the edge
    xy(1,1)=pt(p1)%x         ; xy(2,1)=pt(p1)%y
    xy(1,2)=pt(p2)%x         ; xy(2,2)=pt(p2)%y
    xy(1,3)=cell(in)%cen(1)  ; xy(2,3)=cell(in)%cen(2)
-
    prim(:,1)=pt(p1)%prim(:)       
    prim(:,2)=pt(p2)%prim(:)       
    prim(:,3)=cell(in)%qp(:)
-   grad1=0.0_dp
-   call gradtrixy(prim,xy,grad1,a1,nn)
 
-   fc(i)%grad(1,:)=grad1(1,:)
-   fc(i)%grad(2,:)=grad1(2,:)  
-   cell(in)%grad(1,:)=cell(in)%grad(1,:)+fc(i)%grad(1,:)*a1
-   cell(in)%grad(2,:)=cell(in)%grad(2,:)+fc(i)%grad(2,:)*a1
+   ! gradient to the left  of cell
+   grad2=0.0_dp
+   call gradtrixy(prim,xy,grad2,a2,nn)
+
+   ! face gradient
+   fc(i)%grad(1,:)=(a1*grad1(1,:)+a2*grad2(1,:))/(a1+a2) 
+   fc(i)%grad(2,:)=(a1*grad1(2,:)+a2*grad2(2,:))/(a1+a2) 
+   
+   ! adding contribution to the cells sharing the face 
+   cell(in)%grad(1,:)=cell(in)%grad(1,:)+ fc(i)%grad(1,:)*(a1+a2)
+   cell(in)%grad(2,:)=cell(in)%grad(2,:)+ fc(i)%grad(2,:)*(a1+a2)
 enddo
 
 ! Finally cell gradient, using cell co-volume

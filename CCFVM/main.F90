@@ -85,24 +85,6 @@ do while(iter .lt. MAXITER .and. fres .gt. MINRES)
       stop
    endif
      
-!   if (iter==500) then
-!   allocate(ggqx(noc,nvar),ggqy(noc,nvar))
-!   do i=1,noc 
-!   ggqx(i,:)=cell(i)%qx(:) 
-!   ggqy(i,:)=cell(i)%qy(:) 
-!   enddo
-!   call Gradient_GG_FC
-!   do i=1,noc
-!      write(10,201)i,(ggqx(i,j),j=1,nvar)
-!      write(11,201)i,(ggqy(i,j),j=1,nvar)
-!      write(12,201)i,(cell(i)%qx(j),j=1,nvar)
-!      write(13,201)i,(cell(i)%qy(j),j=1,nvar)
-!   enddo 
-!   deallocate(ggqx,ggqy)
-!   stop
-!   201 format(1x,i8,1x,4(f16.8,2x))
-!   endif
-
    if(timemode == 'rk3')then
       alfa=0.d0
       do irk=1,nirk
@@ -142,7 +124,7 @@ do while(iter .lt. MAXITER .and. fres .gt. MINRES)
       print *, 'Time taken :',te,te-ts
       ts=te   
    endif
-   call flush(6)
+   flush(6)
 enddo
 close(99)
 
@@ -238,11 +220,9 @@ enddo
 
 !100 format(1x,i6,1x,4(f15.6,1x))
 write(*,9)('-',i=1,75)
-9     format(75a)
 write(*,10)m_inf,aoa_deg,Rey,CFL
-10    format(' Mach =',f6.3,'    AOA =',f6.2, '  Rey = ',f9.2,'   CFL = ',f12.2)
-write(*,11)flux_type,ilimit, grad_type, gridfile
-11    format(' Flux = ',a7, '  Lim = ',i2,4x,' Gradient = ',a7,4x,'Grid= ',a30)
+write(*,11)irs,ilimit, trim(grad_type), trim(gridfile)
+write(*,12)trim(timemode),trim(flow_type),trim(flux_type)
 write(*,9)('-',i=1,75)
 write(*,'(" Iterations        =",i12)')iter
 write(*,'(" Global dt         =",e16.6)') dtglobal
@@ -261,10 +241,14 @@ write(*,'(" Temparature       =",2f12.6)')tmin, tmax
 write(*,'(" Mach number       =",2f12.6)')mmin, mmax
 write(*,'(" Entropy           =",2f12.6)')emin, emax
 write(*,*)
-write(*,*)
 !write(*,*)
 !write(*,*)
-call flush(6)
+!write(*,*)
+9     format(75a)
+10    format(' Mach =',f6.3,'    AOA =',f6.2, '  Rey = ',f9.2,'   CFL = ',f12.2)
+11    format(' CIRS = ',i2,2x,'  Limiter = ',i2,2x,' Gradient :',a5,2x,'Grid :',a15)
+12    format(' TimeMode :',a5,2x,'FlowType :',a12,2x,' FluxScheme :',a7)
+flush(6)
 
 end
 
@@ -346,7 +330,7 @@ OPEN(funit,file='tecplt.dat')
 WRITE(funit,*) 'TITLE = "flo2d output" '
 
 !WRITE(funit,*) 'VARIABLES="X","Y","rho","u","v","p" '
-WRITE(funit,*) 'VARIABLES="X","Y","density","u-velocity","v-velocity","Velocity","Pressure","Temprature","Mach","Entropy" '
+WRITE(funit,*) 'VARIABLES="X","Y","density","u-velocity","v-velocity","Mach","Pressure","Temprature","Entropy","Velocity" ,"mu"'
 !WRITE(funit,*) 'ZONE F=FEPOINT,ET=quadrilateral'
 WRITE(funit,*) 'ZONE F=FEPOINT,ET=',trim(ctype)
 WRITE(funit,*) 'N=',nop,',E=',noc
@@ -364,7 +348,7 @@ do i=1,nop
     entropy=log10(po/ro**GAMMA/ent_inf)
 
     !WRITE(funit,*)pt(i)%x,pt(i)%y,r,u,v,p,mach
-    WRITE(funit,100)pt(i)%x,pt(i)%y,ro,uo,vo,Vmag,po,to,mach,entropy
+    WRITE(funit,100)pt(i)%x,pt(i)%y,ro,uo,vo,mach,po,to,entropy,Vmag,pt(i)%mu
       
 END DO
 DO i=1,noc
