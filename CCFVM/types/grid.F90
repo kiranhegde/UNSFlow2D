@@ -4,13 +4,14 @@ use data_type
 use commons
 implicit none
 
-integer(kind=i4):: nop,nof,noc,nogc,startBC=1,endBC=1,startfc=1,endfc=1,nbf 
+integer(kind=i4):: nop,nof,noc,nogc,startBC=1,endBC=1,startfc=1,endfc=1,nbf,nwbc 
 integer(kind=i4):: startGC=1,endGC=1
+integer(kind=i4):: density=1,velocityX=2,velocityY=3,pressure=4,temparature=5 
 
 type points
      real(kind=dp) :: x,y,z
      real(kind=dp) :: prim(1:npvar)=0.0_dp,grad(1:ndim,1:ngrad)=0.0_dp
-     real(kind=dp) :: mu 
+     real(kind=dp) :: mu=0.0_dp 
      integer(kind=i4):: bc,flag,nv2c
      !integer(kind=i4),dimension(:),pointer::v2c
      !real(kind=dp),dimension(:),pointer::wt
@@ -25,9 +26,9 @@ type faces
      integer(kind=i4):: bc
      !integer(kind=i4):: flag
      real(kind=dp)   :: grad(1:ndim,1:ngrad)=0.0_dp
-     real(kind=dp)   :: sx,sy,cov,la,mu
+     real(kind=dp)   :: area,sx,sy,cov,la,mu=0.0_dp
      real(kind=dp)   :: cen(1:ndim)=0.0_dp ! face center
-     real(kind=dp)   :: qp(1:npvar)=0.0_dp  ! face average of primitive variables
+     real(kind=dp)   :: qp(1:npvar)=0.0_dp ! face average of primitive variables
 end type faces
 
 type cells

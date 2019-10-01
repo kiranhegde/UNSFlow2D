@@ -3,9 +3,10 @@ use commons
 use visc
 use pri
 use grid
+use output
 implicit none
 !!------------------------------------------------------------------------------
-integer(kind=i4):: i,ie,in,out
+integer(kind=i4):: i,ie,in,out,bc
 real(kind=dp):: two_third,two,MubyRey
 real(kind=dp):: uvel,vvel
 real(kind=dp):: ux,uy,vx,vy,tx,ty,qx,qy 
@@ -20,8 +21,8 @@ do i=1,noc
    cell(i)%mul= sutherland_viscosity(i)
 enddo
 
-two_third=2.0_dp/3.0_dp
 two=2.0_dp
+two_third=two/3.0_dp
 qx=0.0_dp
 qy=0.0_dp
 
@@ -30,11 +31,12 @@ do ie=1,nof
    flux=0.0_dp
    nx = fc(ie)%sx
    ny = fc(ie)%sy
-   area = dsqrt(nx*nx + ny*ny)
+   area = fc(ie)%area 
    nx = nx/area
    ny = ny/area
    in = fc(ie)%in
    out= fc(ie)%out
+   bc= fc(ie)%bc 
    if(out<=noc) then 
       mu=0.5_dp*(cell(in)%mul+cell(out)%mul)
    else
@@ -69,6 +71,10 @@ do ie=1,nof
 
    cell(in)%res(:)=cell(in)%res(:)-flux(:)*area
    if(out<=noc) cell(out)%res(:)=cell(out)%res(:)+flux(:)*area
+   if(bc==1001) then
+      Fx1=Fx1-flux(3)*area
+      Fy1=Fy1-flux(4)*area
+   endif    
 enddo
 
 

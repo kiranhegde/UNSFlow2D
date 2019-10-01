@@ -181,6 +181,17 @@ do i=1,nof
 
 enddo
 
+do i=1,nof
+   in=fc(i)%in
+   out=fc(i)%out
+   p1=fc(i)%pt(1)
+   p2=fc(i)%pt(2)
+   dx=fc(i)%sx
+   dy=fc(i)%sy
+   fc(i)%area=dsqrt(dx*dx+dy*dy)
+enddo
+
+
 end subroutine cell_face_norm
 !===========================================================
 subroutine cell_2_cell

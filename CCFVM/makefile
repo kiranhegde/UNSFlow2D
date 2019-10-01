@@ -1,5 +1,6 @@
 # Set the F90 Compiler
-TARGETDIR="/home/kiranhegde/FlowSolvers/UNSFlow2DRun/"
+#TARGETDIR="/home/kiranhegde/FlowSolvers/UNSFlow2DRun/"
+TARGETDIR="/usr/local/share/applications/bin/"
 #TARGETDIR="./"
 
 #FC     =gfortran
@@ -31,7 +32,7 @@ SRC = $(wildcard *.F90)
 OBJ = $(patsubst %.F90,%.o,$(SRC))
 
 # Modules
-MOD = data_type.mod commons.mod visc.mod inf.mod  param.mod  pri.mod   grid.mod  tools.mod
+MOD = data_type.mod commons.mod visc.mod inf.mod  param.mod  pri.mod   grid.mod  tools.mod output.mod
 OMOD = $(patsubst %.mod,%.o,$(MOD))
 
 TARGET  = Flo2d 

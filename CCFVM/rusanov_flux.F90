@@ -20,7 +20,7 @@ real(kind=dp):: eigen,spec_rad_r,spec_rad_l
 
 nx = fc(ie)%sx
 ny = fc(ie)%sy
-area = dsqrt(nx*nx + ny*ny)
+area = fc(ie)%area
 nx = nx/area
 ny = ny/area
 

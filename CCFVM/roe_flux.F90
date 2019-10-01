@@ -25,7 +25,7 @@ real(kind=dp),parameter :: ETOL=0.1_dp
 
 nx = fc(ie)%sx
 ny = fc(ie)%sy
-area = dsqrt(nx*nx + ny*ny)
+area = fc(ie)%area
 nx = nx/area
 ny = ny/area
 

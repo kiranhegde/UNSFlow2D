@@ -49,7 +49,7 @@ use pri
 use grid
 implicit none
 integer(kind=i4):: ie,in,out
-real(kind=dp) :: ds,nx,ny,un
+real(kind=dp) :: area,nx,ny,un
 !real(kind=dp) :: qcl(nvar), qcr(nvar)
 
 in  = fc(ie)%in
@@ -57,9 +57,9 @@ out = fc(ie)%out
 if(out<noc) print*,out,'s'
 nx=fc(ie)%sx
 ny=fc(ie)%sy
-ds=dsqrt(nx*nx+ny*ny)
-nx=nx/ds
-ny=ny/ds
+area=fc(ie)%area
+nx=nx/Area
+ny=ny/Area
 
 call con2prim(cell(in)%qc(1:nvar))
 un=u*nx+v*ny
@@ -86,14 +86,14 @@ use commons
 use grid
 implicit none
 integer(kind=i4):: ie
-real(kind=dp) :: ds,nx,ny,un
+real(kind=dp) :: area,nx,ny,un
 real(kind=dp) :: qcl(nvar), qcr(nvar)
 
 nx=fc(ie)%sx
 ny=fc(ie)%sy
-ds=dsqrt(nx*nx+ny*ny)
-nx=nx/ds
-ny=ny/ds
+area=fc(ie)%area
+nx=nx/Area
+ny=ny/Area
 
 un=qcl(2)*nx+qcl(3)*ny
 
@@ -116,7 +116,7 @@ use inf
 implicit none
 integer(kind=i4)  :: ie
 real(kind=dp) :: qcl(nvar), qcr(nvar)
-real(kind=dp) :: dr, nx, ny, q2,un,tx,ty,tn
+real(kind=dp) :: area, nx, ny, q2,un,tx,ty,tn
 real(kind=dp) :: uinf, vinf, pinf, rinf, ainf
 real(kind=dp) :: Rp,Rm,rhob,ub,vb,pb,ab,Sb
 real(kind=dp) :: q2inf,un_inf,Vnrm,Vtan,Vninf,Vtinf
@@ -125,9 +125,9 @@ real(kind=dp) :: lam1,lam2,lam3,mach
 
 nx = fc(ie)%sx
 ny = fc(ie)%sy
-dr = dsqrt(nx*nx + ny*ny)
-nx = nx/dr
-ny = ny/dr
+area=fc(ie)%area
+nx=nx/Area
+ny=ny/Area
 tx=-ny
 ty= nx
 

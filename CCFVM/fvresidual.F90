@@ -7,6 +7,7 @@ use grid
 use param
 use inf
 use pri
+use output
 implicit none
 integer(kind=i4) :: i, j, ie, in, out,key
 real(kind=dp)    :: qcl(nvar), qcr(nvar),flux(nvar),phi
@@ -20,6 +21,8 @@ do i=1,noc
 enddo
 
 key=0
+Fx1=0.0_dp
+Fy1=0.0_dp
 ! Compute flux for boundary edges
 do ie=startBC,endBC
    qcl=0.d0
@@ -93,6 +96,8 @@ do ie=startBC,endBC
          if (flux_type == 'rusanov') call rusanov_flux(ie,qcl,qcr,flux)
          cell(in)%res(:)=cell(in)%res(:)+flux(:)
       endif  
+         Fx1=Fx1+flux(3) 
+         Fy1=Fy1+flux(4) 
    endif
 
 

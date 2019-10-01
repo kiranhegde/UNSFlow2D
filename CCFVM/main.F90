@@ -174,11 +174,14 @@ subroutine screen
 use param
 use pri
 use grid
+use output
 implicit none
 real(kind=dp) :: con(nvar)
 integer(kind=i4)  :: is, i
 real(kind=dp) :: q2, mach, ent 
 
+
+call find_cl_cd
  
 !call  check_positivity
 
@@ -233,9 +236,9 @@ write(*,'(" Global dt         =",e16.6)') dtglobal
 write(*,'(" L2 residue        =",e16.6)')fres
 write(*,'(" Linf residue      =",e16.6)')fresi
 write(*,'(" Linf cell         =",i12)') iresi
-write(*,*)
-!write(*,'(" Cl, Cd            =",2f12.6)')cl,cd
 !write(*,*)
+write(*,'(" Cl, Cd, Cm            =",3f12.6)')cl,cd,cm
+write(*,*)
 write(*,'(27x,"Min",8x,"Max")')          
 write(*,'(" Density           =",2f12.6)')rmin, rmax
 write(*,'(" x velocity        =",2f12.6)')umin, umax
@@ -249,12 +252,116 @@ write(*,*)
 !write(*,*)
 !write(*,*)
 9     format(75a)
-10    format(' Mach =',f6.3,'    AOA =',f6.2, '   CFL = ',f12.2)
+10    format(' Mach =',f6.3,'    AOA =',f6.2, '   CFL = ',f8.2)
 11    format(' CIRS = ',i2,2x,'  Limiter = ',i2,2x,' Gradient :',a5,2x,'Grid :',a15)
 12    format(' TimeMode :',a5,2x,'FlowType :',a12,2x,' FluxScheme :',a7)
-13    format(' Mach =',f6.3,'    AOA =',f6.2,'   CFL = ',f12.2,'  Rey = ',ES12.3)
+13    format(' Mach =',f6.3,'    AOA =',f6.2,'   CFL = ',f8.2,'  Rey = ',ES12.3)
 flush(6)
 
+contains
+
+subroutine  find_cl_cd
+use output
+use inf
+use commons
+use visc
+
+integer(kind=i4) :: ie,p1,p2
+real(kind=dp)    :: pwall,xi,yi,nx,ny,cp,cf,dcx,dcy,xa,ya
+real(kind=dp)    :: ux,uy,vx,vy,tx,ty,tw,tauxx,tauxy,tauyy,mu
+real(kind=dp)    :: two,two_third,dyna,area
+
+ux=0.0_dp     
+uy=0.0_dp     
+vx=0.0_dp     
+vy=0.0_dp     
+tauxx=0.0_dp     
+tauxy=0.0_dp     
+tauyy=0.0_dp     
+!dyna=0.5_dp*r_inf*q_inf*q_inf
+dyna=0.5_dp*gamma*p_inf*m_inf*m_inf
+ 
+two=2.0_dp
+two_third=two/3.0_dp
+fx=0.0_dp
+fy=0.0_dp
+cm=0.0_dp
+i=0
+open(3,file='XYCpCf.dat') 
+do ie=startBC,endBC
+   if(fc(ie)%bc==1001) then
+      i=i+1
+
+      pwall=cell(fc(ie)%in)%qp(4)
+      !pwall=fc(ie)%qp(4)
+
+      p1=fc(ie)%pt(1) 
+      p2=fc(ie)%pt(2) 
+      xi=0.5_dp*(pt(p1)%x+pt(p2)%x)
+      yi=0.5_dp*(pt(p1)%y+pt(p2)%y)
+      xa=xi-xref
+      ya=yi-yref
+      nx=fc(ie)%sx
+      ny=fc(ie)%sy
+      area =fc(ie)%area
+      nx=nx/area 
+      ny=ny/area 
+      cp=(pwall-p_inf)/dyna
+      !cp=pwall
+      dcx=cp*nx
+      dcy=cp*ny
+      fx=fx+dcx
+      fy=fy+dcy
+
+      cf=0.0_dp  
+      if(flow_type/="inviscid") then 
+         mu=fc(ie)%mu/Rey
+         ux=fc(ie)%grad(1,2)
+         uy=fc(ie)%grad(2,2)
+         vx=fc(ie)%grad(1,3)
+         vy=fc(ie)%grad(2,3)
+         Tauxx=two_third*(two*ux-vy)
+         Tauxy=(uy+vx)
+         Tauyy=two_third*(two*vy-ux)
+         fx=fx-mu*(Tauxx*nx+Tauxy*ny)
+         fy=fy-mu*(Tauxy*nx+Tauyy*ny)
+
+         !ds=dsqrt(nx*nx+ny*ny) 
+         !nx=nx/ds
+         !ny=ny/ds
+         tx=ny
+         ty=-nx
+         tw = mu*((ux*tx + vx*ty)*nx + (uy*tx + vy*ty)*ny)
+         cf = tw/dyna
+!        us = dsqrt( dabs(tw)/rho )
+!        ys = rho*us*wd1(i)/mu
+      endif  
+
+      cm=cm+dcx*ya-dcy*xa
+      wbc(i)%cp=-cp
+      wbc(i)%cf=-cf
+      wbc(i)%x=xi
+      wbc(i)%y=yi
+      write(3,*)xi,yi,-cp,cf
+   endif
+enddo
+close(3) 
+cl=0.0_dp
+cd=0.0_dp
+fx=fx*area
+fy=fy*area
+fx1=fx1*area
+fy1=fy1*area
+print*,'Fx Fx1:',fx,fx1
+print*,'Fy Fy1:',fy,fy1
+cl = fy*dCos(aoa) - fx*dSin(aoa)
+cd = fy*dSin(aoa) + fx*dCos(aoa)
+print*,'cl,cd',cl/dyna,cd/dyna
+cl = fy1*dCos(aoa) - fx1*dSin(aoa)
+cd = fy1*dSin(aoa) + fx1*dCos(aoa)
+print*,'cl1,cd1',cl/dyna,cd/dyna
+
+end subroutine  find_cl_cd
 end
 
 SUBROUTINE check_positivity
@@ -336,8 +443,9 @@ WRITE(funit,*) 'TITLE = "flo2d output" '
 
 !WRITE(funit,*) 'VARIABLES="X","Y","rho","u","v","p" '
 WRITE(funit,*) 'VARIABLES="X","Y","density","u-velocity","v-velocity","Mach","Pressure","Temprature","Entropy","Velocity" ,"mu"'
-!WRITE(funit,*) 'ZONE F=FEPOINT,ET=quadrilateral'
-WRITE(funit,*) 'ZONE F=FEPOINT,ET=',trim(ctype)
+WRITE(funit,*) 'ZONE F=FEPOINT,ET=quadrilateral'
+!WRITE(funit,*) 'ZONE F=FEPOINT,ET=',trim(ctype)
+!WRITE(funit,*) 'ZONE F=FEPOINT,ET=',
 WRITE(funit,*) 'N=',nop,',E=',noc
 do i=1,nop
 
@@ -358,7 +466,8 @@ do i=1,nop
 END DO
 DO i=1,noc
    !WRITE(funit,*)elem(1,i), elem(2,i), elem(3,i) 
-   WRITE(funit,*)(cell(i)%c2v(j),j=1,cell(i)%nc2v-1) 
+   if(cell(i)%nc2f==3) WRITE(funit,*)(cell(i)%c2v(j),j=1,cell(i)%nc2v-1),cell(i)%c2v(3) 
+   if(cell(i)%nc2f==4) WRITE(funit,*)(cell(i)%c2v(j),j=1,cell(i)%nc2v-1)
 END DO
 
 CLOSE(funit)

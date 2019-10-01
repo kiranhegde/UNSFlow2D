@@ -64,7 +64,7 @@ use grid
 !use commons
 implicit none
 integer(kind=i4) :: ie,in,out
-real(kind=dp)    :: r0, u0, v0, p0, a0, nx, ny,un,nl,ll,vll,mu
+real(kind=dp)    :: r0, u0, v0, p0, a0, nx, ny,un,area,ll,vll,mu
 real(kind=dp)    :: con(nvar),Kv
 
 do ie=1,noc
@@ -81,7 +81,9 @@ do ie=1,nof
    out=fc(ie)%out
    nx  = fc(ie)%sx
    ny  = fc(ie)%sy
-   nl  = dsqrt(nx*nx + ny*ny)
+   area = fc(ie)%area 
+   nx=nx/area
+   ny=ny/area
    mu  = fc(ie)%mu
    con(1:4)=fc(ie)%qp(1:4)
    r0   = con(1)
@@ -91,7 +93,7 @@ do ie=1,nof
    a0   = dsqrt(gamma*p0/r0)
    un  = u0*nx + v0*ny
    ! inviscid spectral radius
-   ll  = dabs(un) + a0*nl
+   ll  = area*(dabs(un) + a0)
    ! adding viscous spectral radius
    ll = ll + vll*mu/r0
    fc(ie)%la=ll

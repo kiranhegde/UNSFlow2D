@@ -24,7 +24,7 @@ real(kind=dp):: nx,ny,area
 !------------------------------------------------------------------------------
 nx = fc(ie)%sx 
 ny = fc(ie)%sy
-area = dsqrt(nx*nx + ny*ny)
+area = fc(ie)%area 
 nx = nx/area
 ny = ny/area
 

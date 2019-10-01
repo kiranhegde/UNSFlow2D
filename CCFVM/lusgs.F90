@@ -39,11 +39,13 @@ do itr=1,inner_itr
 
 ! Forward loop
 do it=1,noc
+   fvm(it)%lower(:)=0.d0
    cres(:) = 0.0d0
    do j=1,cell(it)%nc2f
       c=cell(it)%c2f(j) 
       sx = fc(c)%sx
       sy = fc(c)%sy
+      ds = dsqrt(sx*sx + sy*sy)
       in = fc(c)%in
       out = fc(c)%out
       if(out==it) then  
@@ -51,12 +53,14 @@ do it=1,noc
          sx =-fc(c)%sx
          sy =-fc(c)%sy
       endif
-      ds = dsqrt(sx*sx + sy*sy)
+      sx=sx/ds
+      sy=sy/ds
 
       if(out .lt. it .and. out .gt. 0.and.out<=noc)then
          call normal_flux(dflux,fvm(out)%lower(1:nvar),out)
          !call maxeig(cell(out)%qc(1:nvar), lam)
          lam=fc(c)%la     
+         !lam=cell(out)%la
          do iv=1,nvar
             cres(iv)=cres(iv)+(dflux(iv) &
                              -omega*lam*fvm(out)%lower(iv))
@@ -72,10 +76,12 @@ enddo
 ! Reverse loop
 do it=noc,1,-1
    cres(:) = 0.0d0
+   fvm(it)%upper(:)=0.d0
    do j=1,cell(it)%nc2f
       c=cell(it)%c2f(j) 
       sx = fc(c)%sx
       sy = fc(c)%sy
+      ds = dsqrt(sx*sx + sy*sy)
       in = fc(c)%in
       out = fc(c)%out
       if(out==it) then  
@@ -83,12 +89,14 @@ do it=noc,1,-1
          sx =-fc(c)%sx
          sy =-fc(c)%sy
       endif
-      ds = dsqrt(sx*sx + sy*sy)
+      sx=sx/ds
+      sy=sy/ds
 
       if(out .gt. it .and. out .gt. 0.and.out<=noc)then
          call normal_flux(dflux,fvm(out)%upper(1:nvar),out)
          !call maxeig(cell(out)%qc(1:nvar), lam)
          lam=fc(c)%la     
+         !lam=cell(out)%la
          do iv=1,nvar
             cres(iv)=cres(iv)+(dflux(iv) &
                              -omega*lam*fvm(out)%upper(iv))
@@ -149,7 +157,7 @@ flux2(2) = rho*un
 flux2(3) = flux2(2)*u + p*sx
 flux2(4) = flux2(2)*v + p*sy
 
-flux(:)=flux2(:)-flux1(:)
+flux(:)=ds*(flux2(:)-flux1(:))
 
 end subroutine normal_flux
 

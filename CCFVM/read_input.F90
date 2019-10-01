@@ -122,7 +122,8 @@ end
 !========================================================
 subroutine read_grid
 use data_type,only:i4
-use grid,only:cells,fc,pt,cell,nop,noc,nof,nogc,nbf,startBC,endBC,startfc,endfc, &
+use output,only:wbc
+use grid,only:cells,fc,pt,cell,nop,noc,nof,nogc,nbf,nwbc,startBC,endBC,startfc,endfc, &
                 & startGC,endGC
 use tools
 implicit none
@@ -165,10 +166,15 @@ enddo
 do i=startFC,endFC
  read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%out,fc(i)%sx,fc(i)%sy,fc(i)%bc
 enddo
+nwbc=0
 do i=startBC,endBC
  read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%sx,fc(i)%sy,fc(i)%bc
+ if(fc(i)%bc==1001) nwbc=nwbc+1
 enddo
 close(3)
+
+print*,'Wall boundary faces :',nwbc
+allocate(wbc(nwbc))
 
 ghostcell=1
 if(ghostcell==1) then
