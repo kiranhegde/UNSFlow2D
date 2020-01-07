@@ -55,11 +55,11 @@ real(kind=dp) :: area,nx,ny,un
 in  = fc(ie)%in
 out = fc(ie)%out
 if(out<noc) print*,out,'s'
-nx=fc(ie)%sx
-ny=fc(ie)%sy
+nx=fc(ie)%nx
+ny=fc(ie)%ny
 area=fc(ie)%area
-nx=nx/Area
-ny=ny/Area
+!nx=nx/Area
+!ny=ny/Area
 
 call con2prim(cell(in)%qc(1:nvar))
 un=u*nx+v*ny
@@ -89,11 +89,11 @@ integer(kind=i4):: ie
 real(kind=dp) :: area,nx,ny,un
 real(kind=dp) :: qcl(nvar), qcr(nvar)
 
-nx=fc(ie)%sx
-ny=fc(ie)%sy
+nx=fc(ie)%nx
+ny=fc(ie)%ny
 area=fc(ie)%area
-nx=nx/Area
-ny=ny/Area
+!nx=nx/Area
+!ny=ny/Area
 
 un=qcl(2)*nx+qcl(3)*ny
 
@@ -123,11 +123,11 @@ real(kind=dp) :: q2inf,un_inf,Vnrm,Vtan,Vninf,Vtinf
 real(kind=dp) :: lam1,lam2,lam3,mach
 
 
-nx = fc(ie)%sx
-ny = fc(ie)%sy
+nx = fc(ie)%nx
+ny = fc(ie)%ny
 area=fc(ie)%area
-nx=nx/Area
-ny=ny/Area
+!nx=nx/Area
+!ny=ny/Area
 tx=-ny
 ty= nx
 
@@ -222,8 +222,8 @@ end
 !real(kind=dp) :: lamda1,lamda3
 !
 !
-!nx = fc(ie)%sx
-!ny = fc(ie)%sy
+!nx = fc(ie)%nx
+!ny = fc(ie)%ny
 !dr =  dsqrt(nx*nx + ny*ny)
 !nx = nx/dr
 !ny = ny/dr

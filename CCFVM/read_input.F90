@@ -164,11 +164,11 @@ do i=1,noc
  read(3,*)j,cell(i)%cen(1),cell(i)%cen(2),cell(i)%cv
 enddo
 do i=startFC,endFC
- read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%out,fc(i)%sx,fc(i)%sy,fc(i)%bc
+ read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%out,fc(i)%nx,fc(i)%ny,fc(i)%bc
 enddo
 nwbc=0
 do i=startBC,endBC
- read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%sx,fc(i)%sy,fc(i)%bc
+ read(3,*)j,fc(i)%pt(1),fc(i)%pt(2),fc(i)%in,fc(i)%nx,fc(i)%ny,fc(i)%bc
  if(fc(i)%bc==1001) nwbc=nwbc+1
 enddo
 close(3)

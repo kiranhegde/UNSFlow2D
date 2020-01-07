@@ -99,7 +99,7 @@ use param,only:ilimit
 
 implicit none
 integer(kind=i4) :: i,j,in,out,p1,p2
-real(kind=dp) :: var,dx,dy
+real(kind=dp) :: var,dx,dy,area
 
 do i=1,noc
    cell(i)%grad(:,:)=0.0_dp
@@ -108,12 +108,13 @@ enddo
 do i=startFC,endFC
    in = fc(i)%in
    out = fc(i)%out
+   area=fc(i)%area
    p1=fc(i)%pt(1)       
    p2=fc(i)%pt(2)       
    !dx= pt(p2)%y-pt(p1)%y    
    !dy=-(pt(p2)%x-pt(p1)%x)    
-   dx=fc(i)%sx
-   dy=fc(i)%sy
+   dx=fc(i)%nx*area
+   dy=fc(i)%ny*area
 
    do j=1,ngrad
       var=fc(i)%qp(j)
@@ -128,10 +129,11 @@ do i=startBC,endBC
    in = fc(i)%in
    p1=fc(i)%pt(1)       
    p2=fc(i)%pt(2)       
+   area=fc(i)%area
    !dx= pt(p2)%y-pt(p1)%y    
    !dy=-(pt(p2)%x-pt(p1)%x)    
-   dx=-fc(i)%sx
-   dy=-fc(i)%sy
+   dx=-fc(i)%nx*area
+   dy=-fc(i)%ny*area
 
    do j=1,ngrad
       var=fc(i)%qp(j)

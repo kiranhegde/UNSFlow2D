@@ -22,11 +22,11 @@ real(kind=dp):: qcl(nvar), qcr(nvar)
 real(kind=dp):: nx,ny,area
 
 !------------------------------------------------------------------------------
-nx = fc(ie)%sx 
-ny = fc(ie)%sy
+nx = fc(ie)%nx 
+ny = fc(ie)%ny
 area = fc(ie)%area 
-nx = nx/area
-ny = ny/area
+!nx = nx/area
+!ny = ny/area
 
 
 rl = qcl(1)

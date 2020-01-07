@@ -83,8 +83,8 @@ do i=startFC,endFC
    x1 = pt(p1)%x ; y1 = pt(p1)%y
    x2 = pt(p2)%x ; y2 = pt(p2)%y
    dx = x2-x1 ; dy = y2-y1
-   fc(i)%sx = dy
-   fc(i)%sy = -dx
+   fc(i)%nx = dy
+   fc(i)%ny = -dx
    check=dotprod(p1,p2,xc,yc)
 
    if(check<0.0_dp) then
@@ -97,8 +97,8 @@ do i=startFC,endFC
       x1 = pt(p2)%x ; y1 = pt(p2)%y
       x2 = pt(p1)%x ; y2 = pt(p1)%y
       dx = x2-x1 ; dy = y2-y1
-      fc(i)%sx = dy
-      fc(i)%sy = -dx
+      fc(i)%nx = dy
+      fc(i)%ny = -dx
    endif 
    
    fc(i)%cen(1)=0.5_dp*(pt(p1)%x+pt(p2)%x)
@@ -126,8 +126,8 @@ do i=startBC,endBC
         x1 = pt(p2)%x ; y1 = pt(p2)%y
         x2 = pt(p1)%x ; y2 = pt(p1)%y
         dx = x2-x1 ; dy = y2-y1
-        fc(i)%sx = dy
-        fc(i)%sy = -dx
+        fc(i)%nx = dy
+        fc(i)%ny = -dx
         !stop
       endif  
    endif  
@@ -145,8 +145,8 @@ do i=startBC,endBC
         x1 = pt(p2)%x ; y1 = pt(p2)%y
         x2 = pt(p1)%x ; y2 = pt(p1)%y
         dx = x2-x1 ; dy = y2-y1
-        fc(i)%sx = dy
-        fc(i)%sy = -dx
+        fc(i)%nx = dy
+        fc(i)%ny = -dx
         !stop
       endif  
    endif  
@@ -168,8 +168,8 @@ do i=1,nof
      x1 = pt(p2)%x ; y1 = pt(p2)%y
      x2 = pt(p1)%x ; y2 = pt(p1)%y
      dx = x2-x1 ; dy = y2-y1
-     fc(i)%sx = dy
-     fc(i)%sy = -dx
+     fc(i)%nx = dy
+     fc(i)%ny = -dx
      fc(i)%in=out
      fc(i)%out=in
       write(33,*)x1,y1 
@@ -181,14 +181,17 @@ do i=1,nof
 
 enddo
 
+print*,'Computing face area and unit normals..'
 do i=1,nof
    in=fc(i)%in
    out=fc(i)%out
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
-   dx=fc(i)%sx
-   dy=fc(i)%sy
+   dx=fc(i)%nx
+   dy=fc(i)%ny
    fc(i)%area=dsqrt(dx*dx+dy*dy)
+   fc(i)%nx=fc(i)%nx/fc(i)%area
+   fc(i)%ny=fc(i)%ny/fc(i)%area
 enddo
 
 
@@ -400,8 +403,8 @@ do i=1,nof
    fac(i)%in   =fc(i)%in   
    fac(i)%out  =fc(i)%out  
    fac(i)%bc   =fc(i)%bc   
-   fac(i)%sx   =fc(i)%sx   
-   fac(i)%sy   =fc(i)%sy   
+   fac(i)%nx   =fc(i)%nx   
+   fac(i)%ny   =fc(i)%ny   
 enddo
 
 do i=1,nof
@@ -411,8 +414,8 @@ do i=1,nof
    fc(i)%in   =fac(it)%in   
    fc(i)%out  =fac(it)%out  
    fc(i)%bc   =fac(it)%bc   
-   fc(i)%sx   =fac(it)%sx   
-   fc(i)%sy   =fac(it)%sy   
+   fc(i)%nx   =fac(it)%nx   
+   fc(i)%ny   =fac(it)%ny   
 enddo
 
 deallocate(oldnum,newnum,fac)
@@ -699,31 +702,32 @@ implicit none
 
 integer(kind=i4) :: i
 integer(kind=i4) :: in,out
-real(kind=dp)    :: ds,sx,sy
+real(kind=dp)    :: area,sx,sy
 
 
 print*
 print*,"==> Cell face length  "
 
 cell(:)%ds=0.0_dp
-cell(:)%dx=0.0_dp
-cell(:)%dy=0.0_dp
+cell(:)%sx=0.0_dp
+cell(:)%sy=0.0_dp
 do i=1,nof
    in=fc(i)%in
    out=fc(i)%out
-   sx=0.5_dp*fc(i)%sx
-   sy=0.5_dp*fc(i)%sy
-   ds=dsqrt(sx*sx+sy*sy)
+   area=fc(i)%area
+   sx=dabs(fc(i)%nx*area)
+   sy=dabs(fc(i)%ny*area)
+   !ds=dsqrt(sx*sx+sy*sy)
    if(in>0) then 
-     cell(in)%ds=cell(in)%ds+ds
-     cell(in)%dx=cell(in)%dx+sx
-     cell(in)%dy=cell(in)%dy+sy
+     cell(in)%ds=cell(in)%ds+area
+     cell(in)%sx=cell(in)%sx+sx
+     cell(in)%sy=cell(in)%sy+sy
    endif 
 
    if(out>0.and.out<=noc) then 
-     cell(out)%ds=cell(out)%ds+ds
-     cell(out)%dx=cell(out)%dx+sx
-     cell(out)%dy=cell(out)%dy+sy
+     cell(out)%ds=cell(out)%ds+area
+     cell(out)%sx=cell(out)%sx+sx
+     cell(out)%sy=cell(out)%sy+sy
    endif 
 enddo
 
@@ -739,7 +743,7 @@ implicit none
 
 integer(kind=i4) :: i
 integer(kind=i4) :: p1,p2
-real(kind=dp)    :: x1,y1,x2,y2
+real(kind=dp)    :: x1,y1,x2,y2,area
 
 x1=0.0_dp
 x2=0.0_dp
@@ -751,13 +755,14 @@ open(4,file='BC_plot.dat')
 do i=startBC,endBC
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
+   area=fc(i)%area
    x1 = pt(p1)%x ; y1 = pt(p1)%y
    x2 = pt(p2)%x ; y2 = pt(p2)%y
    write(4,*)x1,y1
    write(4,*)x2,y2
    write(4,*)
    x1 = (x2+x1)/2.0_dp ; y1= (y2+y1)/2.0_dp
-   write(3,100)x1,y1,fc(i)%sx,fc(i)%sy
+   write(3,100)x1,y1,fc(i)%nx*area,fc(i)%ny*area
 enddo
 close(3)
 close(4)
@@ -793,13 +798,14 @@ close(5)
 open(3,file="NormalsOut.dat")  
 open(4,file="NormalsIn.dat")  
 do i=1,nof
+   area=fc(i)%area
    p1=fc(i)%pt(1)
    p2=fc(i)%pt(2)
    x1 = pt(p1)%x ; y1 = pt(p1)%y
    x2 = pt(p2)%x ; y2 = pt(p2)%y
    x1 = (x2+x1)/2.0_dp ; y1= (y2+y1)/2.0_dp
-   write(3,100)x1,y1,fc(i)%sx*0.5,fc(i)%sy*0.5
-   write(4,100)x1,y1,-fc(i)%sx*0.5,-fc(i)%sy*0.5
+   write(3,100)x1,y1,fc(i)%nx*0.5*area,fc(i)%ny*0.5*area
+   write(4,100)x1,y1,-fc(i)%nx*0.5*area,-fc(i)%ny*0.5*area
 enddo
 close(4)
 close(3)
@@ -1006,34 +1012,34 @@ enddo
 
 end subroutine  pseudo_Laplacian
 !========================================================
-subroutine  Inverse_distance
-use param
-use grid
-implicit none
-
-integer(kind=i4) :: i,j
-integer(kind=i4) :: c
-real(kind=dp)::dx,dy
-real(kind=dp)::xc,yc
-
-do i=1,nop
-   allocate(pt(i)%wt(pt(i)%nv2c))
-   do j=1,pt(i)%nv2c
-      c=pt(i)%v2c(j)
-      xc=cell(c)%cen(1) 
-      yc=cell(c)%cen(2) 
-      dx=xc-pt(i)%x
-      dy=yc-pt(i)%y
-      pt(i)%wt(j)=1._dp/dsqrt(dx*dx+dy*dy)
-      if(pt(i)%wt(j)<0.0_dp) then
-        print*,"'Distance negative..."
-        stop
-      endif    
-   enddo 
-   !print*,i,(pt(i)%v2c(j), j=1,pt(i)%nv2c) 
-enddo
-
-end subroutine  Inverse_distance
+!subroutine  Inverse_distance
+!use param
+!use grid
+!implicit none
+!
+!integer(kind=i4) :: i,j
+!integer(kind=i4) :: c
+!real(kind=dp)::dx,dy
+!real(kind=dp)::xc,yc
+!
+!do i=1,nop
+!   allocate(pt(i)%wt(pt(i)%nv2c))
+!   do j=1,pt(i)%nv2c
+!      c=pt(i)%v2c(j)
+!      xc=cell(c)%cen(1) 
+!      yc=cell(c)%cen(2) 
+!      dx=xc-pt(i)%x
+!      dy=yc-pt(i)%y
+!      pt(i)%wt(j)=1._dp/dsqrt(dx*dx+dy*dy)
+!      if(pt(i)%wt(j)<0.0_dp) then
+!        print*,"'Distance negative..."
+!        stop
+!      endif    
+!   enddo 
+!   !print*,i,(pt(i)%v2c(j), j=1,pt(i)%nv2c) 
+!enddo
+!
+!end subroutine  Inverse_distance
 
 
 

@@ -18,11 +18,11 @@ real(kind=dp):: rol,ul,vl,pl,cl,unl, hl,ql2,al2
 real(kind=dp):: ror,ur,vr,pr,cr,unr, hr,qr2,ar2
 real(kind=dp):: eigen,spec_rad_r,spec_rad_l
 
-nx = fc(ie)%sx
-ny = fc(ie)%sy
+nx = fc(ie)%nx
+ny = fc(ie)%ny
 area = fc(ie)%area
-nx = nx/area
-ny = ny/area
+!nx = nx/area
+!ny = ny/area
 
 ! Left state
 rol = qcl(1)

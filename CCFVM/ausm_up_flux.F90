@@ -33,11 +33,11 @@ ku=0.75_dp
 kp=0.25_dp
 !------------------------------------------------------------------------------
 
-nx = fc(ie)%sx
-ny = fc(ie)%sy
+nx = fc(ie)%nx
+ny = fc(ie)%ny
 area = dsqrt(nx*nx + ny*ny)
-nx = nx/area
-ny = ny/area
+!nx = nx/area
+!ny = ny/area
 
 rl = qcl(1)
 ul = qcl(2)

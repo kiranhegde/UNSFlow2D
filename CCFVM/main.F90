@@ -139,7 +139,7 @@ elapsed(1)= elapsed(1)/60.0
 elapsed(2)= elapsed(1)/60.0
 print *, 'Time: total=', totaltime, ' user=', elapsed(1), &
          ' system=', elapsed(2)
-
+print*, 'Final Residue :',fres 
 !100 format(1x,i6,1x,4(f15.8,1x))
 
 
@@ -301,17 +301,15 @@ do ie=startBC,endBC
       yi=0.5_dp*(pt(p1)%y+pt(p2)%y)
       xa=xi-xref
       ya=yi-yref
-      nx=fc(ie)%sx
-      ny=fc(ie)%sy
       area =fc(ie)%area
-      nx=nx/area 
-      ny=ny/area 
+      nx=fc(ie)%nx
+      ny=fc(ie)%ny
       cp=(pwall-p_inf)/dyna
       !cp=pwall
-      dcx=cp*nx
-      dcy=cp*ny
-      fx=fx+dcx
-      fy=fy+dcy
+      dcx=cp*nx*area
+      dcy=cp*ny*area
+      fx=fx+pwall*nx*area
+      fy=fy+pwall*ny*area
 
       cf=0.0_dp  
       if(flow_type/="inviscid") then 
@@ -323,16 +321,13 @@ do ie=startBC,endBC
          Tauxx=two_third*(two*ux-vy)
          Tauxy=(uy+vx)
          Tauyy=two_third*(two*vy-ux)
-         fx=fx-mu*(Tauxx*nx+Tauxy*ny)
-         fy=fy-mu*(Tauxy*nx+Tauyy*ny)
+         fx=fx-mu*(Tauxx*nx+Tauxy*ny)*area
+         fy=fy-mu*(Tauxy*nx+Tauyy*ny)*area
 
-         !ds=dsqrt(nx*nx+ny*ny) 
-         !nx=nx/ds
-         !ny=ny/ds
          tx=ny
          ty=-nx
          tw = mu*((ux*tx + vx*ty)*nx + (uy*tx + vy*ty)*ny)
-         cf = tw/dyna
+         cf = tw*area/dyna
 !        us = dsqrt( dabs(tw)/rho )
 !        ys = rho*us*wd1(i)/mu
       endif  
@@ -348,18 +343,14 @@ enddo
 close(3) 
 cl=0.0_dp
 cd=0.0_dp
-fx=fx*area
-fy=fy*area
-fx1=fx1*area
-fy1=fy1*area
-print*,'Fx Fx1:',fx,fx1
-print*,'Fy Fy1:',fy,fy1
-cl = fy*dCos(aoa) - fx*dSin(aoa)
-cd = fy*dSin(aoa) + fx*dCos(aoa)
-print*,'cl,cd',cl/dyna,cd/dyna
-cl = fy1*dCos(aoa) - fx1*dSin(aoa)
-cd = fy1*dSin(aoa) + fx1*dCos(aoa)
-print*,'cl1,cd1',cl/dyna,cd/dyna
+!write(*,'(" Fx, Fy  =",2f12.6)') fx,fy
+!write(*,'(" Fx1, Fy1  =",2f12.6)') fx1,fy1
+cl = (fy*dCos(aoa) - fx*dSin(aoa))/dyna
+cd = (fy*dSin(aoa) + fx*dCos(aoa))/dyna
+write(*,'(" Cl, Cd  =",2f12.6)')cl,cd
+cl = (fy1*dCos(aoa) - fx1*dSin(aoa))/dyna
+cd = (fy1*dSin(aoa) + fx1*dCos(aoa))/dyna
+write(*,'(" Cl1, Cd1  =",2f12.6)')cl,cd
 
 end subroutine  find_cl_cd
 end

@@ -26,7 +26,7 @@ type faces
      integer(kind=i4):: bc
      !integer(kind=i4):: flag
      real(kind=dp)   :: grad(1:ndim,1:ngrad)=0.0_dp
-     real(kind=dp)   :: area,sx,sy,cov,la,mu=0.0_dp
+     real(kind=dp)   :: area,nx,ny,cov,la,mu=0.0_dp
      real(kind=dp)   :: cen(1:ndim)=0.0_dp ! face center
      real(kind=dp)   :: qp(1:npvar)=0.0_dp ! face average of primitive variables
 end type faces
@@ -34,7 +34,7 @@ end type faces
 type cells
      integer(kind=i4):: nc2v,nc2f,nc2c
      real(kind=dp)   :: cen(1:ndim)=0.0_dp,cv,cov,phi(1:nvar)=1.0_dp,ds
-     real(kind=dp)   :: dx,dy,dt,dtv,la,ls
+     real(kind=dp)   :: dx,dy,dt,dtv,la,ls,sx,sy
      real(kind=dp)   :: r11,r12,r22,det
      real(kind=dp)   :: qp(1:npvar)=0.0_dp,qc(1:nvar)=0.0_dp,qold(1:nvar)=0.0_dp,res(1:nvar)=0.0_dp
      !real(kind=dp)   :: DUmax(1:nvar)=0.0_dp,DUmin(1:nvar)=0.0_dp

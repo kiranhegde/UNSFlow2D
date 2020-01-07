@@ -23,11 +23,11 @@ real(kind=dp)    :: rl, ul, vl, pl, al2, hl, rr, ur, vr, pr, ar2, hr, &
                     e1,e2, e4, del
 real(kind=dp),parameter :: ETOL=0.1_dp
 
-nx = fc(ie)%sx
-ny = fc(ie)%sy
+nx = fc(ie)%nx
+ny = fc(ie)%ny
 area = fc(ie)%area
-nx = nx/area
-ny = ny/area
+!nx = nx/area
+!ny = ny/area
 
 rl = qcl(1)
 ul = qcl(2)
